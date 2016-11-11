@@ -13,11 +13,13 @@ set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 # The following folder will be included
 include_directories("${PROJECT_SOURCE_DIR}")
 
+# Source files
+file(GLOB SOURCES "${PROJECT_SOURCE_DIR}/*.cc")
+
 # compiler options
 # set for cpp14
 set(CMAKE_CXX_STANDARD 14)
 
 # compile rule
-add_executable(t-spanner ${PROJECT_SOURCE_DIR}/graph_test.cc)
-
+add_executable(t-spanner "${SOURCES}")
 

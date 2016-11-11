@@ -1,14 +1,19 @@
-// TODO add IFDEF thing
+#ifndef GRAPH_H
+#define GRAPH_H
 #include <vector>
-#include <iostream>
-#include <ctime>
-#include <cstdlib>
 #include <numeric>
+#include <functional>
 namespace graphs {
 // Represents an edge ending in vertex end, with weight w.
 struct Edge {
   int end;
   double w;
+  Edge(int end, int w) : end(end), w(w) {}
+  friend bool operator<(const Edge& a, const Edge& b) {return a.w < b.w;}
+  friend bool operator>(const Edge& a, const Edge& b) {return a.w > b.w;}
+  friend bool operator==(const Edge& a, const Edge& b) {
+    return a.w == b.w && a.end == b.end;
+  }
 };
 
 // A class representing a graph, i.e a pair <V,E> of vertices and edges.
@@ -22,13 +27,26 @@ class Graph {
 
   public:
     int size() const { return adj_list.size();}
-    void AddV(int v, std::vector<Edge> neighbors) {
+    /*
+    void AddV(int v, const std::vector<Edge>& neighbors) {
       if (adj_list.size() <= v) {
         adj_list.resize(v + 1);
       }
-      adj_list[v] = std::move(neighbors);
+      adj_list[v].insert(std::end(adj_list[v]), std::begin(neighbors),
+                         std::end(neighbors));
+    } */
+    
+    void add_vertex_with_edges(int v, const std::vector<Edge>& neighbors) {
+      for (auto&& e : neighbors) {
+         add_edge(v, e.end, e.w);
+      }
     }
+
     const std::vector<Edge>& Neighbors(int v) const {return adj_list[v];}
+    void add_edge(int u, int v, double w) {
+      adj_list[u].emplace_back(v, w);
+      adj_list[v].emplace_back(u, w);
+    }
     Graph(int size): adj_list(size) {}
     Graph() {}
 
@@ -36,40 +54,26 @@ class Graph {
       return std::accumulate(std::begin(adj_list), std::end(adj_list), 0.0,
           [] (long acc, auto&& next) { return acc += next.size();});
     }
+    // Returns a graph which is g without all the edges in g s.t pred(e)=true.
+    template<typename Pred>
+    friend Graph filter_edges(Graph g, Pred&& pred) {
+      for (int vertex = 0; vertex < g.size(); ++vertex) {
+        auto& neighbors = g.adj_list[vertex];
+        neighbors.erase(std::remove_if(std::begin(neighbors),
+              std::end(neighbors), [&pred, vertex] (const Edge& e) {
+              return pred(vertex, e.end);
+              }),
+            std::end(neighbors));
+      }
+      return g;
+    }
 };
 
-Graph randomGraph(int num_v) {
-  Graph result(num_v);
-  std::srand(std::time(0));
-  for (int i = 0; i < num_v; ++i) {
-    std::vector<Edge> edges;
-    for (int j = 0; j < num_v; ++j) {
-       if (i == j) {
-          continue;
-       }
-       // Flip a coin to decide wether to add edge <i, j>
-       if ((std::rand() % 2) == 1) {
-         edges.push_back({j, 1});
-       }
-    }
-    result.AddV(i, edges);
-  }
+// Generates a random graph with n vertices.
+Graph randomGraph(int n);
 
-  return result;
-}
 
-std::ostream& operator<<(std::ostream& os, const Edge& g) {
-  os << "(" << g.end << ", " << g.w << ")";
-  return os;
-}
-std::ostream& operator<<(std::ostream& os, const Graph& g) {
-  for (int i = 0; i < g.size(); ++i) {
-    os << "[" << i << "]->{";
-    for (const auto& e : g.Neighbors(i)) {
-      os << e;
-    }
-    os << "}\n";
-  }
-  return os;
-}
+std::ostream& operator<<(std::ostream& os, const Edge& g);
+std::ostream& operator<<(std::ostream& os, const Graph& g);
 } // namespace graphs.
+#endif

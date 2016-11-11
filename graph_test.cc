@@ -1,10 +1,13 @@
 // TODO this file
-#include "graph.h"
+#include "three-spanner-algorithm.h"
+#include <iostream>
 using namespace std;
 using namespace graphs;
 
 int main() {
-  auto g = randomGraph(400);
-  cout << "g has yay many edges " << g.edges() << "\n";
+  auto g = randomGraph(4);
+  cout << "input graph : ";
+  cout << g;
+  std::cout << three_spanner(g).edges();
   return 0;
  }
