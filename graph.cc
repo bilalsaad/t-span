@@ -26,7 +26,7 @@ std::ostream& operator<<(std::ostream& os, const Edge& g) {
 std::ostream& operator<<(std::ostream& os, const Graph& g) {
   for (int i = 0; i < g.size(); ++i) {
     os << "[" << i << "]->{";
-    for (const auto& e : g.Neighbors(i)) {
+    for (const auto& e : g.neighbors(i)) {
       os << e;
     }
     os << "}\n";

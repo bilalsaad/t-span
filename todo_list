@@ -6,3 +6,5 @@ before adding. The unordered_set is prefered.
 
 2. Write something that creates a graph object from a text file. To make testing
 easier.
+
+3. Write unit tests for the graph class
