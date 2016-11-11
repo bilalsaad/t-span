@@ -1,6 +1,8 @@
 Hello this is a todo list in the project.
 
+1. Make it so when edges are added we ignore duplicate edges - this can be done
+by changing the vector that holds edges to an unordered_set or simply checking
+before adding. The unordered_set is prefered.
 
-Make a build tool for the project (using CMake or something).
-Add some sorts of tests.
-implement the tests.
+2. Write something that creates a graph object from a text file. To make testing
+easier.
