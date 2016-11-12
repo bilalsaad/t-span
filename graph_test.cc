@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <fstream>
 using namespace std;
 using namespace graphs;
 
@@ -48,7 +49,8 @@ Graph evil_graph_2() {
 }
 int main(int argc, char** argv) {
   //auto g = randomGraph(argc > 1 ? std::stoi(*(argv+1)) : 5);
-  auto g = evil_graph_2();
+  //auto g = evil_graph_2();
+  auto g = parse_input("../test1.txt");
   cout << "input graph:\n" << g;
   auto threespan = three_spanner(g);
   cout << "three spanner:\n" << threespan;
