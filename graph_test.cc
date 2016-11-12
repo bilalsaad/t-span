@@ -47,10 +47,10 @@ Graph evil_graph_2() {
   return g;
 }
 int main(int argc, char** argv) {
-  //auto g = randomGraph(argc > 1 ? std::stoi(*(argv+1)) : 5);
-  auto g = evil_graph_2();
-  cout << "input graph:\n" << g;
+  auto g = randomGraph(argc > 1 ? std::stoi(*(argv+1)) : 5);
+  cout << "input graph edges:\n" << g.edges() << "\n";
   auto threespan = three_spanner(g);
-  cout << "three spanner:\n" << threespan;
+  cout << "three spanner:" << threespan.edges() << "\n";
+  cout << "difference between edge bumbers: " << g.edges() - threespan.edges();
   return 0;
  }

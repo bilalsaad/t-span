@@ -43,6 +43,8 @@ class Graph {
     std::vector<std::unordered_set<Edge>> adj_list;
 
   public:
+    Graph(int size): adj_list(size) {}
+    Graph() {}
     int size() const { return adj_list.size();}
 
     template<typename Container>
@@ -58,8 +60,6 @@ class Graph {
       adj_list[u].emplace(v, w);
       adj_list[v].emplace(u, w);
     }
-    Graph(int size): adj_list(size) {}
-    Graph() {}
     bool has_edge(int v, int u) {
       return adj_list[v].count({u, 0}) != 0 || adj_list[u].count({v, 0}) != 0;
     }

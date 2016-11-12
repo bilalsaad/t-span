@@ -17,10 +17,8 @@ namespace {
     vector<int> non_sampled_vertices;
     srand(std::time(0));
     for (int i = 0; i < g.size(); ++i) {
-      //if ((std::rand() % 100) < 50) { 
-      if (i == 1 || i == 3) {
+     if ((std::rand() % 100) < 50) { 
         sampled_vertices[i] = i;
-        cout << "SAMPLE: " << i << endl;
       } else {
         non_sampled_vertices.push_back(i);
       }
@@ -76,11 +74,12 @@ namespace {
   
   auto join_clusters(const Clusters& clusters, const Graph& not_added_graph,
                      Graph& spanner) {
-    for (int i = 0; i < clusters.size(); ++i) {
+    /*for (int i = 0; i < clusters.size(); ++i) {
         cout << "[" << i << "]->" << clusters[i] << "\n";
     }
     cout << "not_added:\n" << not_added_graph; 
     cout << "spanner:\n" << spanner;
+    */
     for (int i = 0; i < not_added_graph.size() ; ++i) {
       const auto& neighbors = not_added_graph.neighbors(i);
       unordered_map<int, Edge> cluster_representives;
