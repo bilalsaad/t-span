@@ -110,6 +110,4 @@ Graph three_spanner(const Graph& g) {
   return spanner;
 
 }
-
-
 } // namespace graphs

@@ -72,7 +72,7 @@ class Graph {
       for (int vertex = 0; vertex < g.size(); ++vertex) {
         auto& neighbors = g.adj_list[vertex];
         std::unordered_set<Edge> temp;
-        for (auto&& edge : neighbors) {
+        for (const auto& edge : neighbors) {
           if (!pred(vertex, edge.end)) {
             temp.emplace(edge.end, edge.w);
           }
