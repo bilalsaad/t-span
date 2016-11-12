@@ -17,7 +17,8 @@ namespace {
     vector<int> non_sampled_vertices;
     srand(std::time(0));
     for (int i = 0; i < g.size(); ++i) {
-      if ((std::rand() % 100) < 50) { 
+      //if ((std::rand() % 100) < 50) { 
+      if (i == 1 || i == 3) {
         sampled_vertices[i] = i;
         cout << "SAMPLE: " << i << endl;
       } else {
@@ -67,35 +68,33 @@ namespace {
     Graph graph_without_intra_cluster_edges =
       filter_edges(g, [&clusters, &spanner] (int start, int end) {
           // Remove edges that are in spanner and intra cluster edges. 
-          return spanner.neighbors(start).count({end, 0}) != 0 ||
+          return spanner.has_edge(start, end) ||
          (clusters[start] != -1 && clusters[start] == clusters[end]);
           }); 
-
     return make_pair(clusters, graph_without_intra_cluster_edges);
   }
   
   auto join_clusters(const Clusters& clusters, const Graph& not_added_graph,
                      Graph& spanner) {
-    cout << "join_clusters on:\n"
-         << "clusters:\n";
     for (int i = 0; i < clusters.size(); ++i) {
-        cout << "[" << i << "]->" << clusters[i] << "\n ";
+        cout << "[" << i << "]->" << clusters[i] << "\n";
     }
-    cout << "\n spanner:\n" << spanner
-      << "\n not_added_graph:\n:" << not_added_graph;
+    cout << "not_added:\n" << not_added_graph; 
+    cout << "spanner:\n" << spanner;
     for (int i = 0; i < not_added_graph.size() ; ++i) {
       const auto& neighbors = not_added_graph.neighbors(i);
       unordered_map<int, Edge> cluster_representives;
       for (const auto& e : neighbors) {
         assert(clusters[e.end] != -1);
         auto current_rep = cluster_representives.find(e.end);
-        if (current_rep == std::end(cluster_representives) ||
-           current_rep->second > e) {
+        if (current_rep == std::end(cluster_representives)) { 
           cluster_representives.emplace(clusters[e.end], e);
-        }
+        } else if (current_rep->second > e) {
+          current_rep->second = e;
+         }
       }
       for (auto&& reps : cluster_representives) {
-          spanner.add_edge(i, reps.second.end, reps.second.w);
+        spanner.add_edge(i, reps.second.end, reps.second.w);
       }
     } 
   }
@@ -108,6 +107,5 @@ Graph three_spanner(const Graph& g) {
       clusters_and_not_added_edges.second,
       spanner);
   return spanner;
-
 }
 } // namespace graphs

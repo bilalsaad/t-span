@@ -30,11 +30,27 @@ Graph evil_graph() {
   return g;
 }
 
+Graph evil_graph_2() {
+  Graph g(4);
+  // edges for 0
+  vector<Edge> edges = {{2,81}, {3, 24}};
+  g.add_vertex_with_edges(0, edges);
+  // edges for 1
+  edges = {{2,97},{3,38}};
+  g.add_vertex_with_edges(1, edges);
+  // edges for 2
+  edges = {{3,78}, {1,97}, {0,81}};
+  g.add_vertex_with_edges(2, edges);
+  // edges for 3
+  edges = {{2,78}, {1,38}, {0, 24}};
+  g.add_vertex_with_edges(3, edges);
+  return g;
+}
 int main(int argc, char** argv) {
   //auto g = randomGraph(argc > 1 ? std::stoi(*(argv+1)) : 5);
-  auto g = evil_graph();
+  auto g = evil_graph_2();
   cout << "input graph:\n" << g;
-  //auto threespan = three_spanner(g);
-  //cout << "three spanner:\n" << threespan;
+  auto threespan = three_spanner(g);
+  cout << "three spanner:\n" << threespan;
   return 0;
  }

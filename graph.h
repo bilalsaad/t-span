@@ -4,6 +4,7 @@
 #include <numeric>
 #include <functional>
 #include <unordered_set>
+#include <iostream>
 
 namespace graphs {
 // Represents an edge ending in vertex end, with weight w.
@@ -15,7 +16,7 @@ struct Edge {
   friend bool operator<(const Edge& a, const Edge& b) {return a.w < b.w;}
   friend bool operator>(const Edge& a, const Edge& b) {return a.w > b.w;}
   friend bool operator==(const Edge& a, const Edge& b) {
-    return a.w == b.w && a.end == b.end;
+    return a.end == b.end;
   }
 };
 
@@ -59,7 +60,9 @@ class Graph {
     }
     Graph(int size): adj_list(size) {}
     Graph() {}
-
+    bool has_edge(int v, int u) {
+      return adj_list[v].count({u, 0}) != 0 || adj_list[u].count({v, 0}) != 0;
+    }
     long edges() {
       return std::accumulate(std::begin(adj_list), std::end(adj_list), 0,
           [] (long acc, auto&& next) { return acc += next.size();});
@@ -86,7 +89,6 @@ class Graph {
 
 // Generates a random graph with n vertices.
 Graph randomGraph(int n);
-
 
 std::ostream& operator<<(std::ostream& os, const Edge& g);
 std::ostream& operator<<(std::ostream& os, const Graph& g);
