@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <fstream>
+#include <cassert>
 using namespace std;
 using namespace graphs;
 
@@ -47,13 +48,34 @@ Graph evil_graph_2() {
   g.add_vertex_with_edges(3, edges);
   return g;
 }
+
+void parser_test() {
+  ofstream myfile;
+  for (int i = 0; i < 500; ++i) {
+    auto g = randomGraph(3 + i);
+    myfile.open("../example2.txt");
+    if (!myfile.is_open()) {
+      cout << "could not open file ";
+      assert(false);
+    }
+    myfile << g;
+    myfile.close();
+    auto parsed_g = parse_input("../example2.txt");
+    if (parsed_g.edges() != g.edges()) {
+      cout << "expected: " << g.edges() << " edges. Got: " << parsed_g.edges();
+      cout << "\ninput graph " << g;
+      cout << "\n graph parsed " << parsed_g;
+      assert(false);
+    }
+  }
+  cout << "success! \n";
+}
+
 int main(int argc, char** argv) {
   //auto g = randomGraph(argc > 1 ? std::stoi(*(argv+1)) : 5);
   //auto g = evil_graph_2();
-  auto g = parse_input("../test1.txt");
-  cout << "input graph:\n" << g;
-  auto threespan = three_spanner(g);
-  cout << "three spanner:" << threespan.edges() << "\n";
-  cout << "difference between edge bumbers: " << g.edges() - threespan.edges();
+  //parser_test();
+  parser_test();
+  
   return 0;
  }
