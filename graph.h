@@ -6,6 +6,7 @@
 #include <unordered_set>
 #include <iostream>
 #include <fstream>
+#include <experimental/optional>
 
 using namespace std;
 
@@ -63,13 +64,17 @@ class Graph {
       adj_list[u].emplace(v, w);
       adj_list[v].emplace(u, w);
     }
-    bool has_edge(int v, int u) {
-      return adj_list[v].count({u, 0}) != 0 || adj_list[u].count({v, 0}) != 0;
+
+    bool has_edge(int v, int u) const {
+      return v < size() && u < size() &&
+        (adj_list[v].count({u, 0}) != 0 || adj_list[u].count({v, 0}) != 0);
     }
-    long edges() {
+
+    long edges() const {
       return std::accumulate(std::begin(adj_list), std::end(adj_list), 0,
           [] (long acc, auto&& next) { return acc += next.size();});
     }
+
     // Returns a graph which is g without all the edges in g s.t pred(e)=true.
     // TODO(): if the predicate is not symmetric this may turn an undirected
     // graph to a directed one..
@@ -88,13 +93,15 @@ class Graph {
       }
       return g;
     }
+
 };
 
 // Generates a random graph with n vertices.
 Graph randomGraph(int n);
-Graph parse_input(string input);
+std::experimental::optional<Graph> parse_input(string input);
 
 std::ostream& operator<<(std::ostream& os, const Edge& g);
 std::ostream& operator<<(std::ostream& os, const Graph& g);
+bool operator==(const Graph& a, const Graph& b);
 } // namespace graphs.
 #endif
