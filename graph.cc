@@ -39,12 +39,14 @@ namespace graphs {
   }
 
   namespace {
+    // return the number of vertex
     int head_vertex(const string& line){
       int left_square_bracket = line.find('[');
       int right_square_bracket = line.find(']');
       return stoi(line.substr(left_square_bracket + 1, right_square_bracket - left_square_bracket - 1 ));
     }
 
+    // split string by delimiter into sring tokens and return vector of the tokens 
     vector<string> split_by_delimiter(const string& s, const char& c){
       string buff;// = new string();
       vector<string> v;
@@ -57,6 +59,8 @@ namespace graphs {
       return v;
     }
 
+    //process_vertex takes the line that represents single vertex meta-data and parse each edge (struct) in vector.
+    //meta data include the neighbor vertex and the wight of each their edge.
     vector<Edge> process_vertex(const string& vertex_line){
       int left_bracket, right_bracket, comma;
       int neighbor_vertex,edge_wight;
@@ -64,8 +68,7 @@ namespace graphs {
       left_bracket = vertex_line.find('{');
       right_bracket = vertex_line.find('}');
       string edges = vertex_line.substr(left_bracket + 1, right_bracket - left_bracket - 1);
-      // explode(edges);
-      vector<string> v = split_by_delimiter(edges,'.'); // edges vector
+      vector<string> v = split_by_delimiter(edges,'.');
       for(const string& n:v){
         left_bracket = n.find('(');
         right_bracket = n.find(')');
@@ -76,13 +79,13 @@ namespace graphs {
       }
       return edges_vecor;
     }
-  }  //namespace
+  }
 
+  //takes fstream input and parse it and return Graph in success 
   std::experimental::optional<Graph> parse_input(std::fstream& graph_input){
     string line;
     int head;
     try {
-      //ifstream graph_input(input);
       if(graph_input.is_open()){
         getline(graph_input,line);
         if (line.size() == 0) {
