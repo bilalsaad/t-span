@@ -39,10 +39,10 @@ namespace graphs {
   }
 
   namespace {
-    int headG(const string& line){
-      int a = line.find('[');
-      int b = line.find(']');
-      return stoi(line.substr(a+1,b-a-1));
+    int head_vertex(const string& line){
+      int left_square_bracket = line.find('[');
+      int right_square_bracket = line.find(']');
+      return stoi(line.substr(left_square_bracket + 1, right_square_bracket - left_square_bracket - 1 ));
     }
 
     vector<string> split_by_delimiter(const string& s, const char& c){
@@ -57,41 +57,41 @@ namespace graphs {
       return v;
     }
 
-    vector<Edge> process_line(const string& line){
-      int a,b,c;
-      int num1,num2;
+    vector<Edge> process_vertex(const string& vertex_line){
+      int left_bracket, right_bracket, comma;
+      int neighbor_vertex,edge_wight;
       vector<Edge> edges_vecor;
-      a = line.find('{');
-      b = line.find('}');
-      string edges = line.substr(a+1,b-a-1);
+      left_bracket = vertex_line.find('{');
+      right_bracket = vertex_line.find('}');
+      string edges = vertex_line.substr(left_bracket + 1, right_bracket - left_bracket - 1);
       // explode(edges);
       vector<string> v = split_by_delimiter(edges,'.'); // edges vector
       for(const string& n:v){
-        a = n.find('(');
-        b = n.find(')');
-        c = n.find(',');
-        num1 = std::stoi(n.substr(a+1,c-a-1));
-        num2 = std::stoi(n.substr(c+1,b-c-1));
-        edges_vecor.push_back({num1,num2});
+        left_bracket = n.find('(');
+        right_bracket = n.find(')');
+        comma = n.find(',');
+        neighbor_vertex = std::stoi(n.substr(left_bracket+1, comma - left_bracket - 1));
+        edge_wight = std::stoi(n.substr(comma+1, right_bracket - comma - 1));
+        edges_vecor.push_back({neighbor_vertex, edge_wight});
       }
       return edges_vecor;
     }
   }  //namespace
 
-  std::experimental::optional<Graph> parse_input(string input){
+  std::experimental::optional<Graph> parse_input(std::fstream& graph_input){
     string line;
     int head;
     try {
-      ifstream graph_input(input);
+      //ifstream graph_input(input);
       if(graph_input.is_open()){
         getline(graph_input,line);
         if (line.size() == 0) {
-          cout << "got empty line for file:" << input << "\n";
+          cout << "got empty line for file" << "\n";
           return {};
         }
         Graph result(std::stoi(line));
         while(getline(graph_input,line)){
-          result.add_vertex_with_edges(headG(line), process_line(line));
+          result.add_vertex_with_edges(head_vertex(line), process_vertex(line));
         }
         return result;
       }

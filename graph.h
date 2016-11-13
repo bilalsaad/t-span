@@ -98,7 +98,7 @@ class Graph {
 
 // Generates a random graph with n vertices.
 Graph randomGraph(int n);
-std::experimental::optional<Graph> parse_input(string input);
+std::experimental::optional<Graph> parse_input(std::fstream&);
 
 std::ostream& operator<<(std::ostream& os, const Edge& g);
 std::ostream& operator<<(std::ostream& os, const Graph& g);

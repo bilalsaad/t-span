@@ -51,6 +51,7 @@ Graph evil_graph_2() {
 
 void parser_test() {
   ofstream myfile;
+  fstream graph_input;
   for (int i = 0; i < 180; ++i) {
     auto g = randomGraph(3 + i);
     myfile.open("../example2.txt");
@@ -60,13 +61,22 @@ void parser_test() {
     }
     myfile << g;
     myfile.close();
-    auto maybe_parsed_g = parse_input("../example2.txt");
+
+    graph_input.open("../example2.txt");
+    if(!graph_input.is_open()){
+      cout << "Error open input file" << endl;
+      assert(false);
+    }
+
+    auto maybe_parsed_g = parse_input(graph_input);
     if (!maybe_parsed_g) {
+      graph_input.close();
       cout << "failed to parse graph: " << g;
       assert(false);
     }
     auto&& parsed_g = *maybe_parsed_g;
     if (!(parsed_g == g)) {
+      graph_input.close();
       cout << "expected: " << g.edges() << " edges. Got: " << parsed_g.edges();
       cout << "\ninput graph " << g;
       cout << "\n graph parsed " << parsed_g;
@@ -74,13 +84,20 @@ void parser_test() {
     }
   }
   cout << "success! on good input\n";
+  graph_input.close();
 
   // Try with bad files:
   myfile.open("../example3");
   // malformedgraph.
   auto g = randomGraph(12);
   myfile << "aascxz" << g;
-  assert(!parse_input("../example3"));
+  graph_input.open("../example3");
+    if(!graph_input.is_open()){
+      graph_input.close();
+      cout << "Error open input file" << endl;
+      assert(false);
+    }
+  assert(!parse_input(graph_input));
 }
 
 int main(int argc, char** argv) {
