@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <numeric>
 #include <fstream>
+#include <string>
 
 namespace graphs {
   namespace {
@@ -25,6 +26,7 @@ namespace graphs {
   }
 
   Graph randomGraph(int num_v) {
+    scoped_timer("building graph with " + std::to_string(num_v) + " vertices");
     Graph result(num_v);
     std::srand(std::time(0));
     for (int i = 0; i < num_v; ++i) {
@@ -43,10 +45,12 @@ namespace graphs {
     int head_vertex(const string& line){
       int left_square_bracket = line.find('[');
       int right_square_bracket = line.find(']');
-      return stoi(line.substr(left_square_bracket + 1, right_square_bracket - left_square_bracket - 1 ));
+      return stoi(line.substr(left_square_bracket + 1,
+            right_square_bracket - left_square_bracket - 1 ));
     }
 
-    // split string by delimiter into sring tokens and return vector of the tokens 
+    // split string by delimiter into sring tokens and return vector of
+    // the tokens 
     vector<string> split_by_delimiter(const string& s, const char& c){
       string buff;// = new string();
       vector<string> v;
@@ -59,7 +63,8 @@ namespace graphs {
       return v;
     }
 
-    //process_vertex takes the line that represents single vertex meta-data and parse each edge (struct) in vector.
+    //process_vertex takes the line that represents single vertex meta-data
+    //and parse each edge (struct) in vector.
     //meta data include the neighbor vertex and the wight of each their edge.
     vector<Edge> process_vertex(const string& vertex_line){
       int left_bracket, right_bracket, comma;
@@ -67,13 +72,15 @@ namespace graphs {
       vector<Edge> edges_vecor;
       left_bracket = vertex_line.find('{');
       right_bracket = vertex_line.find('}');
-      string edges = vertex_line.substr(left_bracket + 1, right_bracket - left_bracket - 1);
+      string edges = vertex_line.substr(left_bracket + 1,
+          right_bracket - left_bracket - 1);
       vector<string> v = split_by_delimiter(edges,'.');
       for(const string& n:v){
         left_bracket = n.find('(');
         right_bracket = n.find(')');
         comma = n.find(',');
-        neighbor_vertex = std::stoi(n.substr(left_bracket+1, comma - left_bracket - 1));
+        neighbor_vertex = std::stoi(n.substr(left_bracket+1,
+              comma - left_bracket - 1));
         edge_wight = std::stoi(n.substr(comma+1, right_bracket - comma - 1));
         edges_vecor.push_back({neighbor_vertex, edge_wight});
       }
@@ -89,7 +96,7 @@ namespace graphs {
       if(graph_input.is_open()){
         getline(graph_input,line);
         if (line.size() == 0) {
-          cout << "got empty line for file" << "\n";
+          cout << "got empty line." << "\n";
           return {};
         }
         Graph result(std::stoi(line));

@@ -5,6 +5,7 @@
 #include <vector>
 #include <fstream>
 #include <cassert>
+#include <chrono>
 using namespace std;
 using namespace graphs;
 
@@ -51,7 +52,6 @@ Graph evil_graph_2() {
 
 void parser_test() {
   ofstream myfile;
-  fstream graph_input;
   for (int i = 0; i < 180; ++i) {
     auto g = randomGraph(3 + i);
     myfile.open("../example2.txt");
@@ -62,6 +62,7 @@ void parser_test() {
     myfile << g;
     myfile.close();
 
+    fstream graph_input;
     graph_input.open("../example2.txt");
     if(!graph_input.is_open()){
       cout << "Error open input file" << endl;
@@ -82,15 +83,16 @@ void parser_test() {
       cout << "\n graph parsed " << parsed_g;
       assert(false);
     }
+    graph_input.close();
   }
   cout << "success! on good input\n";
-  graph_input.close();
 
   // Try with bad files:
   myfile.open("../example3");
   // malformedgraph.
   auto g = randomGraph(12);
   myfile << "aascxz" << g;
+  fstream graph_input;
   graph_input.open("../example3");
     if(!graph_input.is_open()){
       graph_input.close();
@@ -101,10 +103,10 @@ void parser_test() {
 }
 
 int main(int argc, char** argv) {
-  //auto g = randomGraph(argc > 1 ? std::stoi(*(argv+1)) : 5);
+  auto g = randomGraph(argc > 1 ? std::stoi(*(argv+1)) : 5);
+  auto spanner = three_spanner(g);
   //auto g = evil_graph_2();
   //parser_test();
-  parser_test();
-  
+  //parser_test();
   return 0;
  }
