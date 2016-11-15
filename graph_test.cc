@@ -102,11 +102,68 @@ void parser_test() {
   assert(!parse_input(graph_input));
 }
 
-int main(int argc, char** argv) {
-  auto g = randomGraph(argc > 1 ? std::stoi(*(argv+1)) : 5);
+void test_bellmanford(const Graph& g) {
+  auto dists = bellmanford(g, 0);
+  cout << g;
+  for (int i = 0; i < g.size(); ++i) {
+    cout << "d(0," << i << ") -> " << dists[i] << "\n"; 
+  }
+}
+
+void test_spanner_bellman(const Graph& g) {
+  auto distances_g = bellmanford(g, 0);
   auto spanner = three_spanner(g);
+  auto distances_spanner = bellmanford(spanner, 7);
+  cout << "difference in edges g - span(g) " << g.edges() - spanner.edges() <<
+   "\n"; 
+  int number_eq = 0;
+  int number_not_eq = 0;
+  double max_diff = 0;
+  std::pair<double, double> max_diff_pair = {0, 0};
+  for (int i = 0; i < g.size(); ++i) {
+    auto diff = distances_spanner[i] - distances_g[i];
+    if (distances_spanner[i] == distances_g[i]) {
+      ++number_eq;
+    } else {
+      ++number_not_eq;
+    }
+    max_diff = diff > max_diff ? diff : max_diff;
+    if (max_diff_pair.first - max_diff_pair.second != max_diff) {
+      max_diff_pair.first = distances_spanner[i];
+      max_diff_pair.second = distances_g[i];
+    }
+  }
+  cout << "Number of distances not changes: " << number_eq << "\n";
+  cout << "Number of distances changed: " << number_not_eq << "\n";
+  cout << "Max difference between two distances: " << max_diff << "\n";
+  cout << "Max change " << max_diff_pair.second << " -> " <<
+    max_diff_pair.first << " \n";
+}
+
+void test_spanner_warshall(const Graph& g) {
+  auto spanner = three_spanner(g);
+  auto dists_g = floydwarshall(g);
+  auto dists_s = floydwarshall(spanner);
+  int num_diff = 0;
+  for (int v = 0; v < g.size(); ++v)
+    for(int u = 0; u < g.size(); ++u) {
+      if (dists_g[u][v] != dists_s[v][u]) {
+        cout << "dist_g[" << v << ", " << u << "] = " << dists_g[v][u] << "  ";
+        cout << "dist_s[" << v << ", " << u << "] = " << dists_s[v][u] << endl;
+        ++num_diff;
+      }
+    }
+  cout << "diff: " << num_diff << endl;
+
+
+}
+
+int main(int argc, char** argv) {
   //auto g = evil_graph_2();
   //parser_test();
   //parser_test();
+  auto g = randomGraph(argc > 1 ? std::stoi(*(argv+1)) : 5);
+  //test_bellmanford(g);
+  test_spanner_warshall(g);
   return 0;
  }

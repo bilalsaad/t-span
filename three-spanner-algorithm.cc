@@ -6,8 +6,10 @@
 #include <iostream>
 #include <cstdlib>
 #include <cassert>
+#include "util.h"
 
 namespace graphs {
+  using scoped_timer = util::scoped_timer;
 namespace {
   using namespace std;
   using Clusters = vector<int>; 
@@ -17,7 +19,7 @@ namespace {
     vector<int> non_sampled_vertices;
     srand(std::time(0));
     for (int i = 0; i < g.size(); ++i) {
-     if ((std::rand() % 100) < 50) { 
+     if ((std::rand() % 100) < 30) { 
         sampled_vertices[i] = i;
       } else {
         non_sampled_vertices.push_back(i);

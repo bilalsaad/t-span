@@ -8,6 +8,7 @@
 #include <fstream>
 #include <chrono>
 #include <experimental/optional>
+#include "util.h"
 
 using namespace std;
 
@@ -38,25 +39,6 @@ namespace std {
 }  // namespace std.
 
 namespace graphs {
-  using Clock = std::chrono::high_resolution_clock;
-  using std::chrono::time_point;
-  using std::chrono::duration_cast;
-  using timeunit = std::chrono::duration<double>;
-  using namespace std::literals::chrono_literals;
-  class scoped_timer {
-    public:
-      scoped_timer(const string& s = ""): start_time(Clock::now()), name(s) {}
-      ~scoped_timer() {
-        auto end_time = Clock::now();
-        auto diff = duration_cast<timeunit>(end_time - start_time);
-        std::cout << "Time elapsed" << (name.empty() ? "" : "for " + name)
-          << ": " << diff.count() << " seconds" << std::endl;
-      }
-    private:
-      time_point<Clock> start_time; 
-      string name;
-
-  };
   // A class representing a graph, i.e a pair <V,E> of vertices and edges.
   // This implementation is an adjacency lists. Vertices are associated with a
   // number between 0 and |V|-1. Each edge will have a weight as well.
@@ -100,7 +82,6 @@ namespace graphs {
       // graph to a directed one..
       template<typename Pred>
         friend Graph filter_edges(Graph g, Pred&& pred) {
-          scoped_timer ("filter_edges");
           for (int vertex = 0; vertex < g.size(); ++vertex) {
             auto& neighbors = g.adj_list[vertex];
             std::unordered_set<Edge> temp;
@@ -120,7 +101,8 @@ namespace graphs {
   // Generates a random graph with n vertices.
   Graph randomGraph(int n);
   std::experimental::optional<Graph> parse_input(std::fstream&);
-
+  vector<double> bellmanford(const Graph& g, int src);
+  vector<vector<double>> floydwarshall(const Graph& g);
   std::ostream& operator<<(std::ostream& os, const Edge& g);
   std::ostream& operator<<(std::ostream& os, const Graph& g);
   bool operator==(const Graph& a, const Graph& b);

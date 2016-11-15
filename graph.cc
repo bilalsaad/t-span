@@ -5,8 +5,10 @@
 #include <numeric>
 #include <fstream>
 #include <string>
+#include <limits>
 
 namespace graphs {
+  using scoped_timer = util::scoped_timer;
   namespace {
     // Returns true if a is a subgraph of b. i.e for all edges e in a they exist
     // in b.
@@ -134,4 +136,67 @@ namespace graphs {
     }
     return os;
   }
+
+vector<double> bellmanford(const Graph& g, int src) {
+  vector<double> distances(g.size(), std::numeric_limits<double>::infinity());
+  vector<int> predecessors(g.size(), -1);
+
+  distances[src] = 0;
+  for (int i = 0; i < g.size(); ++i) {
+    // to go over the edges we go over the vertices.
+    for(int v = 0; v < g.size(); ++v) {
+      for (const auto& edge : g.neighbors(v)) {
+        if (distances[v] + edge.w < distances[edge.end]) {
+          distances[edge.end] = distances[v] + edge.w;
+          predecessors[edge.end] = v;
+        }
+      }
+    }
+  }
+  // TODO(check negative cycles)
+  for(int v = 0; v < g.size(); ++v) {
+    for (const auto& edge : g.neighbors(v)) {
+      if (distances[v] + edge.w < distances[edge.end]) {
+        cout << "Graph contains cycles of legative_length";
+      }
+    }
+  }
+  return distances;
+}
+/*
+ void floydWarshall() {
+       for( int k = 0; k < n; k++ )
+       for( int i = 0; i < n; i++ )
+       for( int j = 0; j < n; j++ )
+           graph[i][j] = min( graph[i][j], graph[i][k] + graph[k][j] );
+   }
+*/
+
+vector<vector<double>> floydwarshall(const Graph& g) {
+  vector<vector<double>> dists (g.size(),
+      vector<double>(g.size(), std::numeric_limits<double>::infinity()));
+  // Initialize the dists with the edge weight for the graph.
+  for (int i = 0; i < g.size(); ++i) {
+    dists[i][i] = 0;
+  }
+  for (int i = 0; i < g.size(); ++i) {
+    for(int j = 0; j < g.size(); ++j) {
+      if (g.has_edge(i, j)) {
+        // put its weight in i , j;
+        for (const auto& e : g.neighbors(i)) {
+          if (e.end == j) {
+            dists[i][j] = e.w;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  for (int k = 0; k < g.size(); ++k)
+    for (int i = 0; i < g.size(); ++i)
+      for (int j = 0; j < g.size(); ++j)
+        dists[i][j] = std::min(dists[i][j], dists[i][k] + dists[k][j]);
+  return dists;
+}
 }  // namespace graphs
