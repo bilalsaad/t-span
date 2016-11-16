@@ -11,15 +11,22 @@
 namespace graphs {
   using scoped_timer = util::scoped_timer;
 namespace {
+  double random_real() {
+    static std::default_random_engine generator;
+    std::uniform_real_distribution<double> dst(0, 1);
+    return dst(generator);
+  }
+
   using namespace std;
   using Clusters = vector<int>; 
   auto sample(const Graph& g) {
     scoped_timer st("sample"); 
+    auto probability = 1.0 / sqrt(static_cast<double>(g.size()));
     Clusters sampled_vertices(g.size(), -1);
     vector<int> non_sampled_vertices;
     srand(std::time(0));
     for (int i = 0; i < g.size(); ++i) {
-     if ((std::rand() % 100) < 30) { 
+     if (random_real() < probability) { 
         sampled_vertices[i] = i;
       } else {
         non_sampled_vertices.push_back(i);
@@ -71,8 +78,8 @@ namespace {
           return spanner.has_edge(start, end) ||
          (clusters[start] != -1 && clusters[start] == clusters[end]);
           }); 
-    return make_pair(std::move(clusters),
-        std::move(graph_without_intra_cluster_edges));
+    return make_pair(clusters,
+        graph_without_intra_cluster_edges);
   }
   
   auto join_clusters(const Clusters& clusters, const Graph& not_added_graph,

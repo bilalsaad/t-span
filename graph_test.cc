@@ -146,7 +146,7 @@ void test_spanner_warshall(const Graph& g) {
   auto dists_s = floydwarshall(spanner);
   int num_diff = 0;
   for (int v = 0; v < g.size(); ++v)
-    for(int u = 0; u < g.size(); ++u) {
+    for(int u = v + 1; u < g.size(); ++u) {
       if (dists_g[u][v] != dists_s[v][u]) {
         cout << "dist_g[" << v << ", " << u << "] = " << dists_g[v][u] << "  ";
         cout << "dist_s[" << v << ", " << u << "] = " << dists_s[v][u] << endl;
@@ -154,16 +154,39 @@ void test_spanner_warshall(const Graph& g) {
       }
     }
   cout << "diff: " << num_diff << endl;
-
-
+  cout << "diff edges " << g.edges() - spanner.edges() << endl;
+  cout << "Number of edges in spanner: " << spanner.edges() << endl;
+  cout << "n ^ (3/2): " << g.size() * sqrt(g.size()) << endl;
 }
 
+
+void test_random_vs_warshall(int size) {
+  auto g = randomGraph(size);
+  auto dists_g = floydwarshall(g);
+  cout << "g has: " << g.edges() << endl;
+  cout << dists_g.size() << endl;
+}
+
+void log_last_graph(const Graph& g) {
+  ofstream last_graph_log;
+  last_graph_log.open("last_graph_log.txt");
+  last_graph_log << g;
+  last_graph_log.close();
+}
+
+void test_simple_spanner(const Graph& g) {
+  auto spanner = three_spanner(g);
+  cout << "Number of edges in spanner: " << spanner.edges() << endl;
+  cout << "Number of edges in graph: " << g.edges() << endl;
+  cout << "n ^ (3/2)  = " << g.size() * sqrt(g.size()) << endl;
+}
 int main(int argc, char** argv) {
   //auto g = evil_graph_2();
   //parser_test();
   //parser_test();
   auto g = randomGraph(argc > 1 ? std::stoi(*(argv+1)) : 5);
-  //test_bellmanford(g);
-  test_spanner_warshall(g);
+  //test_spanner_warshall(g);
+  test_simple_spanner(g);
+  if (g.size() < 1000) log_last_graph(g);
   return 0;
  }

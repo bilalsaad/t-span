@@ -9,6 +9,7 @@
 
 namespace graphs {
   using scoped_timer = util::scoped_timer;
+  using util::random_real;
   namespace {
     // Returns true if a is a subgraph of b. i.e for all edges e in a they exist
     // in b.
@@ -28,13 +29,14 @@ namespace graphs {
   }
 
   Graph randomGraph(int num_v) {
-    scoped_timer("building graph with " + std::to_string(num_v) + " vertices");
+    scoped_timer st(
+        "building graph with " + std::to_string(num_v) + " vertices");
     Graph result(num_v);
     std::srand(std::time(0));
     for (int i = 0; i < num_v; ++i) {
       for (int j = i + 1; j < num_v; ++j) {
         // Flip a coin to decide wether to add edge <i, j>
-        if ((std::rand() % 100) < 64) {
+        if (random_real() < 0.5) {
           result.add_edge(i, j, static_cast<double>(std::rand() % 100));
         }
       }
@@ -173,6 +175,7 @@ vector<double> bellmanford(const Graph& g, int src) {
 */
 
 vector<vector<double>> floydwarshall(const Graph& g) {
+  scoped_timer st("floydwarshall");
   vector<vector<double>> dists (g.size(),
       vector<double>(g.size(), std::numeric_limits<double>::infinity()));
   // Initialize the dists with the edge weight for the graph.

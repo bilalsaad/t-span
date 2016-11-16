@@ -3,6 +3,7 @@
 #include <chrono>
 #include <string>
 #include <iostream>
+#include <random>
 
 namespace util {
   using Clock = std::chrono::high_resolution_clock;
@@ -24,5 +25,8 @@ namespace util {
       time_point<Clock> start_time; 
       std::string name;
   };
+
+  // returns a random real number between 0 .. 1
+  double random_real();
 } // namespace util.
 #endif
