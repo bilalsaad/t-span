@@ -32,12 +32,11 @@ namespace graphs {
     scoped_timer st(
         "building graph with " + std::to_string(num_v) + " vertices");
     Graph result(num_v);
-    std::srand(std::time(0));
     for (int i = 0; i < num_v; ++i) {
       for (int j = i + 1; j < num_v; ++j) {
         // Flip a coin to decide wether to add edge <i, j>
         if (random_real() < 0.5) {
-          result.add_edge(i, j, static_cast<double>(std::rand() % 100));
+          result.add_edge(i, j, static_cast<double>((std::rand() % 100) + 90));
         }
       }
     }

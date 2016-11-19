@@ -50,6 +50,15 @@ Graph evil_graph_2() {
   return g;
 }
 
+Graph evil_graph_3() {
+   fstream graph_input;
+   graph_input.open("last_graph_logcopy.txt");
+   auto maybe_parsed_g = parse_input(graph_input);
+   if (!maybe_parsed_g)
+     assert(false);
+   return *maybe_parsed_g;
+}
+
 void parser_test() {
   ofstream myfile;
   for (int i = 0; i < 180; ++i) {
@@ -113,7 +122,7 @@ void test_bellmanford(const Graph& g) {
 void test_spanner_bellman(const Graph& g) {
   auto distances_g = bellmanford(g, 0);
   auto spanner = three_spanner(g);
-  auto distances_spanner = bellmanford(spanner, 7);
+  auto distances_spanner = bellmanford(spanner, 0);
   cout << "difference in edges g - span(g) " << g.edges() - spanner.edges() <<
    "\n"; 
   int number_eq = 0;
@@ -140,23 +149,26 @@ void test_spanner_bellman(const Graph& g) {
     max_diff_pair.first << " \n";
 }
 
-void test_spanner_warshall(const Graph& g) {
+void test_spanner_warshall(const Graph& g, bool print_all = false) {
   auto spanner = three_spanner(g);
   auto dists_g = floydwarshall(g);
   auto dists_s = floydwarshall(spanner);
   int num_diff = 0;
   for (int v = 0; v < g.size(); ++v)
-    for(int u = v + 1; u < g.size(); ++u) {
-      if (dists_g[u][v] != dists_s[v][u]) {
+    for(int u = v; u < g.size(); ++u) {
+      if (dists_g[u][v] != dists_s[v][u] || print_all) {
         cout << "dist_g[" << v << ", " << u << "] = " << dists_g[v][u] << "  ";
         cout << "dist_s[" << v << ", " << u << "] = " << dists_s[v][u] << endl;
         ++num_diff;
       }
     }
+  auto expected_edges = g.size() * sqrt(g.size());
   cout << "diff: " << num_diff << endl;
   cout << "diff edges " << g.edges() - spanner.edges() << endl;
   cout << "Number of edges in spanner: " << spanner.edges() << endl;
-  cout << "n ^ (3/2): " << g.size() * sqrt(g.size()) << endl;
+  cout << "Number of edges in graph: " << g.edges() << endl;
+  cout << "Expected number of edges: " <<  expected_edges << endl;
+  cout << "actual / expected: " << spanner.edges() / expected_edges << endl;
 }
 
 
@@ -175,18 +187,22 @@ void log_last_graph(const Graph& g) {
 }
 
 void test_simple_spanner(const Graph& g) {
+  auto expected_edges = g.size() * sqrt(g.size());
   auto spanner = three_spanner(g);
   cout << "Number of edges in spanner: " << spanner.edges() << endl;
   cout << "Number of edges in graph: " << g.edges() << endl;
-  cout << "n ^ (3/2)  = " << g.size() * sqrt(g.size()) << endl;
+  cout << "Expected number of edges: " <<  expected_edges << endl;
+  cout << "actual / expected: " << spanner.edges() / expected_edges << endl;
 }
 int main(int argc, char** argv) {
   //auto g = evil_graph_2();
   //parser_test();
   //parser_test();
   auto g = randomGraph(argc > 1 ? std::stoi(*(argv+1)) : 5);
-  //test_spanner_warshall(g);
-  test_simple_spanner(g);
+  test_spanner_warshall(g, g.size() < 500);
+  //auto g = evil_graph_3();
+  //test_simple_spanner(g);
   if (g.size() < 1000) log_last_graph(g);
+
   return 0;
- }
+}

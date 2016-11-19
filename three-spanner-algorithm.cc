@@ -10,13 +10,8 @@
 
 namespace graphs {
   using scoped_timer = util::scoped_timer;
+  using util::random_real;
 namespace {
-  double random_real() {
-    static std::default_random_engine generator;
-    std::uniform_real_distribution<double> dst(0, 1);
-    return dst(generator);
-  }
-
   using namespace std;
   using Clusters = vector<int>; 
   auto sample(const Graph& g) {
@@ -32,18 +27,21 @@ namespace {
         non_sampled_vertices.push_back(i);
       }
     }
-    return std::make_pair(sampled_vertices, non_sampled_vertices);
+    return sampled_vertices;
   } 
 
-  auto form_clusters(const Graph& g, Graph& spanner) {
+  auto form_clusters(Graph g, Graph& spanner) {
     scoped_timer st("form_cluster");
-    auto samples = sample(g);
-    auto& clusters = samples.first;
-    const auto& unsampled_vertices = samples.second;
+    auto clusters = sample(g);
 
     // Possible optimization - give up on the unsampled_vertices and only use
     // the clusters.
-    for(auto&& unsampled_vertex : unsampled_vertices) {
+    for(int unsampled_vertex = 0; unsampled_vertex < g.size();
+        ++unsampled_vertex) {
+      // If this is a sampled vertex continue the loop;
+      if (clusters[unsampled_vertex] == unsampled_vertex) {
+          continue;
+      }
       const auto& neighbors = g.neighbors(unsampled_vertex);
       Edge sentinel_edge{-1, 0}; 
       // Pick the best edge adjacent to a sampled vertex, if there are non the
@@ -72,14 +70,13 @@ namespace {
         }
       }
     }
-    Graph graph_without_intra_cluster_edges =
-      filter_edges(g, [&clusters, &spanner] (int start, int end) {
+     auto filtered_g = filter_edges(g,
+         [&clusters, &spanner] (int start, int end) {
           // Remove edges that are in spanner and intra cluster edges. 
           return spanner.has_edge(start, end) ||
          (clusters[start] != -1 && clusters[start] == clusters[end]);
           }); 
-    return make_pair(clusters,
-        graph_without_intra_cluster_edges);
+    return make_pair(clusters, g);
   }
   
   auto join_clusters(const Clusters& clusters, const Graph& not_added_graph,
@@ -89,7 +86,6 @@ namespace {
       const auto& neighbors = not_added_graph.neighbors(i);
       unordered_map<int, Edge> cluster_representives;
       for (const auto& e : neighbors) {
-        assert(clusters[e.end] != -1);
         auto current_rep = cluster_representives.find(e.end);
         if (current_rep == std::end(cluster_representives)) { 
           cluster_representives.emplace(clusters[e.end], e);
@@ -104,10 +100,10 @@ namespace {
   }
 }  // namespace.
 
-Graph three_spanner(const Graph& g) {
+Graph three_spanner(Graph g) {
   scoped_timer st("three-span");
   Graph spanner(g.size());
-  auto clusters_and_not_added_edges = form_clusters(g, spanner);
+  auto clusters_and_not_added_edges = form_clusters(std::move(g), spanner);
   join_clusters(clusters_and_not_added_edges.first,
       clusters_and_not_added_edges.second,
       spanner);

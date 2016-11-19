@@ -38,7 +38,7 @@ namespace graphs {
   // Let E<s,1> and E<s,2> be the sets of edges added to the spanner in the
   // first phase and the second phase respectively. G(V, E1 union E2) is a
   // spanner.
-  Graph three_spanner(const Graph& g);
+  Graph three_spanner(Graph g);
 } // namespace graphs
 
 
