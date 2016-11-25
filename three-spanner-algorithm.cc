@@ -18,13 +18,10 @@ namespace {
     scoped_timer st("sample"); 
     auto probability = 1.0 / sqrt(static_cast<double>(g.size()));
     Clusters sampled_vertices(g.size(), -1);
-    vector<int> non_sampled_vertices;
     srand(std::time(0));
     for (int i = 0; i < g.size(); ++i) {
      if (random_real() < probability) { 
         sampled_vertices[i] = i;
-      } else {
-        non_sampled_vertices.push_back(i);
       }
     }
     return sampled_vertices;
@@ -76,7 +73,7 @@ namespace {
           return spanner.has_edge(start, end) ||
          (clusters[start] != -1 && clusters[start] == clusters[end]);
           }); 
-    return make_pair(clusters, g);
+    return make_pair(clusters, filtered_g);
   }
   
   auto join_clusters(const Clusters& clusters, const Graph& not_added_graph,

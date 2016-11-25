@@ -199,10 +199,9 @@ int main(int argc, char** argv) {
   //parser_test();
   //parser_test();
   auto g = randomGraph(argc > 1 ? std::stoi(*(argv+1)) : 5);
-  test_spanner_warshall(g, g.size() < 500);
+  //test_spanner_warshall(g, g.size() < 500);
+  test_spanner_warshall(g);
   //auto g = evil_graph_3();
-  //test_simple_spanner(g);
   if (g.size() < 1000) log_last_graph(g);
-
   return 0;
 }

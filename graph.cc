@@ -36,7 +36,7 @@ namespace graphs {
       for (int j = i + 1; j < num_v; ++j) {
         // Flip a coin to decide wether to add edge <i, j>
         if (random_real() < 0.5) {
-          result.add_edge(i, j, static_cast<double>((std::rand() % 100) + 90));
+          result.add_edge(i, j, static_cast<double>((random_real() * 100.0) + 90));
         }
       }
     }
@@ -164,14 +164,6 @@ vector<double> bellmanford(const Graph& g, int src) {
   }
   return distances;
 }
-/*
- void floydWarshall() {
-       for( int k = 0; k < n; k++ )
-       for( int i = 0; i < n; i++ )
-       for( int j = 0; j < n; j++ )
-           graph[i][j] = min( graph[i][j], graph[i][k] + graph[k][j] );
-   }
-*/
 
 vector<vector<double>> floydwarshall(const Graph& g) {
   scoped_timer st("floydwarshall");
