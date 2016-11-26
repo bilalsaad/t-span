@@ -1,5 +1,6 @@
 // TODO this file
 #include "three-spanner-algorithm.h"
+#include "2k_spanner.h"
 #include <iostream>
 #include <string>
 #include <vector>
@@ -195,13 +196,8 @@ void test_simple_spanner(const Graph& g) {
   cout << "actual / expected: " << spanner.edges() / expected_edges << endl;
 }
 int main(int argc, char** argv) {
-  //auto g = evil_graph_2();
-  //parser_test();
-  //parser_test();
   auto g = randomGraph(argc > 1 ? std::stoi(*(argv+1)) : 5);
-  //test_spanner_warshall(g, g.size() < 500);
-  test_spanner_warshall(g);
-  //auto g = evil_graph_3();
+  two_k_minus_1_spanner(2, g);
   if (g.size() < 1000) log_last_graph(g);
   return 0;
 }

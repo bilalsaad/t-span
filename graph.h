@@ -17,6 +17,7 @@ namespace graphs {
   struct Edge {
     int end;
     double w;
+    Edge(int end, double w) : end(end), w(w) {}
     Edge(int end, int w) : end(end), w(w) {}
     Edge(const Edge& other): end(other.end), w(other.w) {}
     friend bool operator<(const Edge& a, const Edge& b) {return a.w < b.w;}
@@ -78,6 +79,20 @@ namespace graphs {
             [] (long acc, auto&& next) { return acc += next.size();});
       }
 
+      void remove_edge(int u, int v) {
+        adj_list[u].erase({v, -1});
+        adj_list[v].erase({u, -1});
+      }
+
+      template<typename Pred>
+      void remove_neighbors(int vertex, Pred&& pred) {
+        for (auto&& neighbor : adj_list[vertex]) {
+          if (pred(neighbor.end)) {
+              remove_edge(vertex, neighbor.end);
+          }
+        }
+      }
+
       // Returns a graph which is g without all the edges in g s.t pred(e)=true.
       // TODO(): if the predicate is not symmetric this may turn an undirected
       // graph to a directed one..
@@ -96,7 +111,7 @@ namespace graphs {
           }
           return g;
         }
-
+      void clear_neighbors(int v);
   };
 
   // Generates a random graph with n vertices.

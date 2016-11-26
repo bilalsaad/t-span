@@ -1,5 +1,4 @@
 # Minimum version for CMake
-
 cmake_minimum_required(VERSION 3.6)
 
 # Project name
