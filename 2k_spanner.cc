@@ -13,7 +13,7 @@ namespace graphs {
 namespace{
   using Clusters = vector<int>;
   
-  auto sample (const vector<int>& cluster_representives, double probability = 0.2) {
+  auto sample (const vector<int>& cluster_representives, double probability) {
     std::unordered_set<int> sampled_clusters;
 
     for (auto rep : cluster_representives) {
@@ -116,9 +116,7 @@ namespace{
     auto C_i = numbers_to_n(g.size());
     vector<int> V_i_next;
     Clusters C_i_next;
-    double probability =  pow(g.size(), -1.0 / static_cast<double>(k));
-    cout << pow(g.size(), static_cast<double>(k)) << endl;
-    cout << "le probability " << probability << endl;
+    double probability =  pow(g.size(), -1.0 * static_cast<double>(k));
     for (int i = 0; i < (k / 2); ++i) {
       auto R_i = sample(C_i, probability);
       V_i_next = add_vertices_from_clusters(R_i, C_i);
@@ -132,6 +130,8 @@ namespace{
         }
         auto min_edge_heap =
           create_cluster_to_min_edge_heap(g, v, C_i);
+        // If the vertex has no adjacent sampled clusters, we add the minimum
+        // edge of all of its neighbors.
         if (std::none_of(std::begin(g.neighbors(v)),
               std::end(g.neighbors(v)),
               [&] (auto&& neighbor) {
@@ -143,6 +143,9 @@ namespace{
             spanner.add_edge(v, min_edge.min_edge.end, min_edge.min_edge.w);
           }
         } else {  // V is adjacent to a sampled cluster.
+          // In this case we add the minimum edges corresponding to the adjacent
+          // clusters until we reach a sampled one. Removing all the edges of
+          // the clusters we add.
           int cluster = -1;
           while (!min_edge_heap.empty() && cluster != -1) {
             auto min_edge = get_top<ClusterAndEdge>(min_edge_heap); 
@@ -175,12 +178,75 @@ namespace{
 
     return std::make_pair(g, C_i);
   }
+
+
+  template<typename Container, typename Key, typename Value, typename KeyPred,
+            typename ValuePred>
+  void replace_if_pred_in_map(Container& container, Key&& key, Value&& v,
+                              KeyPred&& key_pred, ValuePred&& value_pred) {
+    auto iter = std::find_if(std::begin(container),
+                          std::end(container),
+                          [&] (auto&& a) {
+                            return key_pred(a.first, key) &&
+                            value_pred(a.second, v);});
+  }
+
+  // Assume this is the case of odd k..
+  auto join_clusters(const Graph& not_yet_added, Graph& spanner,
+      const Clusters& clusters) {
+
+    auto pair_hash = [] (const std::pair<int, int>& pair) -> size_t {
+      return pair.first ^ pair.second;
+    };
+
+    auto compare_pairs = [] (const std::pair<int, int>& a,
+                           const std::pair<int, int>& b) {
+      return (a.first == b.first && b.second == a.second) ||
+             (a.second == b.first && a.first == b.second);
+
+    };
+
+    struct ExtendedEdge {
+      int u, v;
+      double w;
+      ExtendedEdge(int u, int v, double w): u(u), v(v), w(w) {}
+    };
+
+    std::unordered_map <std::pair<int, int>,
+                        ExtendedEdge,
+                        decltype(pair_hash),
+                        decltype(compare_pairs)>
+                          map(1, pair_hash, compare_pairs);
+    // Now we iterate over all the edges in not_yet_added maintaining the min
+    // edge.
+    for (int v = 0; v < not_yet_added.size(); ++v) {
+      if (not_yet_added.neighbors(v).empty() || clusters[v] == -1)
+         continue;
+      int v_cluster = clusters[v];
+      for (const auto& edge : not_yet_added.neighbors(v)) {
+        //assert(clusters[edge.end] != v_cluster);
+        int neighbor_cluster = clusters[edge.end];
+        replace_if_pred_in_map<decltype(map)>(map,
+            std::make_pair(v_cluster, neighbor_cluster),
+            ExtendedEdge{v, edge.end, edge.w}, compare_pairs,
+            [&] (const ExtendedEdge& old, const ExtendedEdge& new_key) {
+                return old.w > new_key.w; 
+            }
+            );
+            
+       }
+
+    }
+
+    
+
+  }
 }  // namespace.
 
 
 Graph two_k_minus_1_spanner(int k, Graph g) {
   Graph spanner(g.size());
-  auto a = form_clusters(g, spanner, k);
+  auto end_of_phase_1 = form_clusters(g, spanner, k);
   cout << "The spanner: " << spanner << endl;
   cout << "The spanner edges: " << spanner.edges() << endl;
   cout << "The g edges: " << g.edges() << endl;
