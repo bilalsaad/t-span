@@ -116,7 +116,8 @@ namespace{
     auto C_i = numbers_to_n(g.size());
     vector<int> V_i_next;
     Clusters C_i_next;
-    double probability =  pow(g.size(), -1.0 * static_cast<double>(k));
+    double probability = pow(g.size(), -1.0 / static_cast<double>(k));
+    cout << probability << endl;
     for (int i = 0; i < (k / 2); ++i) {
       auto R_i = sample(C_i, probability);
       V_i_next = add_vertices_from_clusters(R_i, C_i);
@@ -189,6 +190,11 @@ namespace{
                           [&] (auto&& a) {
                             return key_pred(a.first, key) &&
                             value_pred(a.second, v);});
+    if (iter == std::end(container)) {
+      container.emplace(key, v);
+    } else if (value_pred(iter->second, v)) {
+      iter->second = v;
+    }
   }
 
   // Assume this is the case of odd k..
@@ -203,22 +209,22 @@ namespace{
                            const std::pair<int, int>& b) {
       return (a.first == b.first && b.second == a.second) ||
              (a.second == b.first && a.first == b.second);
-
     };
 
     struct ExtendedEdge {
       int u, v;
       double w;
       ExtendedEdge(int u, int v, double w): u(u), v(v), w(w) {}
+      ExtendedEdge(const ExtendedEdge& e): u(e.u), v(e.v), w(e.w) {}
     };
 
-    std::unordered_map <std::pair<int, int>,
+    std::unordered_map<std::pair<int, int>,
                         ExtendedEdge,
                         decltype(pair_hash),
                         decltype(compare_pairs)>
                           map(1, pair_hash, compare_pairs);
     // Now we iterate over all the edges in not_yet_added maintaining the min
-    // edge.
+    // edge for each pair of clusters.
     for (int v = 0; v < not_yet_added.size(); ++v) {
       if (not_yet_added.neighbors(v).empty() || clusters[v] == -1)
          continue;
@@ -228,18 +234,17 @@ namespace{
         int neighbor_cluster = clusters[edge.end];
         replace_if_pred_in_map<decltype(map)>(map,
             std::make_pair(v_cluster, neighbor_cluster),
-            ExtendedEdge{v, edge.end, edge.w}, compare_pairs,
+            ExtendedEdge(v, edge.end, edge.w), compare_pairs,
             [&] (const ExtendedEdge& old, const ExtendedEdge& new_key) {
                 return old.w > new_key.w; 
-            }
+                }
             );
-            
        }
-
     }
 
-    
-
+    for(const auto& e : map) {
+      spanner.add_edge(e.second.u, e.second.v, e.second.w);
+    }
   }
 }  // namespace.
 
@@ -247,10 +252,13 @@ namespace{
 Graph two_k_minus_1_spanner(int k, Graph g) {
   Graph spanner(g.size());
   auto end_of_phase_1 = form_clusters(g, spanner, k);
+  cout << "The spanner edges: " << spanner.edges() << endl;
+  join_clusters(end_of_phase_1.first,spanner, end_of_phase_1.second);
   cout << "The spanner: " << spanner << endl;
   cout << "The spanner edges: " << spanner.edges() << endl;
   cout << "The g edges: " << g.edges() << endl;
-  return {};
+  //cout << "The g : " << g << endl;
+  return spanner;
 }
 
 }  // namespace graphs

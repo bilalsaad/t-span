@@ -197,7 +197,7 @@ void test_simple_spanner(const Graph& g) {
 }
 int main(int argc, char** argv) {
   auto g = randomGraph(argc > 1 ? std::stoi(*(argv+1)) : 5);
-  two_k_minus_1_spanner(2, g);
+  two_k_minus_1_spanner(3, g);
   if (g.size() < 1000) log_last_graph(g);
   return 0;
 }
