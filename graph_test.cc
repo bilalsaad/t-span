@@ -1,14 +1,17 @@
 // TODO this file
 #include "three-spanner-algorithm.h"
 #include "2k_spanner.h"
+#include "json.hpp"
 #include <iostream>
 #include <string>
 #include <vector>
 #include <fstream>
 #include <cassert>
 #include <chrono>
+#include <thread>
 using namespace std;
 using namespace graphs;
+using json = nlohmann::json;
 
 
 Graph evil_graph() {
@@ -197,34 +200,94 @@ void test_simple_spanner(const Graph& g) {
 }
 
 template<typename SpannerAlg>
-bool CreateSpannerReport(SpannerAlg&& alg,
+bool CreateSpannerEdgeNumberReport(SpannerAlg&& alg,
+    int start_size,
+    int end_size,
+    int how_many_runs,
+    const string& report_prefix = "",
+    int inc = 1) {
+  ofstream outfile(report_prefix + "graph_report.json");
+  vector<json> size_ratio_vector;
+  for (int size = start_size ; size < end_size; size += inc) {
+    json run_for_size;
+    run_for_size["size"] = size;
+    long long running_spanner_edge_size = 0L;
+    double running_average = 0.0;
+    for(int j = 0; j < how_many_runs; ++j) {
+      auto g = randomGraph(size);
+      auto spanner = alg(g);
+      auto part_of_average = double(g.edges()) / double(spanner.edges());
+      assert(g.edges() >= spanner.edges());
+      running_average += part_of_average;
+      running_spanner_edge_size += spanner.edges();
+    }
+    run_for_size["average_ratio"] = running_average / double(how_many_runs);
+    run_for_size["average_spanner_size"] = running_spanner_edge_size /
+      how_many_runs;
+    size_ratio_vector.emplace_back(std::move(run_for_size));
+  }
+  outfile << json(std::move(size_ratio_vector));
+  return true;
+}
+
+template<typename SpannerAlg>
+void CreateSpannerStretchReport(SpannerAlg&& alg,
     int start_size,
     int end_size,
     int how_many_runs,
     const string& report_prefix = "") {
-  ofstream outfile( report_prefix + "graph_report");
+  auto create_strech_json = [&] (int graph_size) -> json {
+    json res;
+    res["size"] = graph_size;
+    double running_stretch = 0.0;
+    auto skip_strech_pair = [&] (auto&& g_dst, auto&& s_dst) -> bool {
+      return g_dst == std::numeric_limits<double>::infinity() ||
+             g_dst == 0;
+    };
 
-  for (int size = start_size ; size < end_size; ++size) {
-    for(int j = 0; j < how_many_runs; ++j) {
-      outfile << size << " ";
-      auto g = randomGraph(size);
+    for (int run = 0; run < how_many_runs; ++run) {
+      auto g = randomGraph(graph_size);
       auto spanner = alg(g);
-      outfile << g.edges() << " ";
-      outfile << spanner.edges() << "\n";
+      auto dsts_g = floydwarshall(g);
+      auto dsts_s = floydwarshall(spanner);
+      int stretches_considered = 0;
+      double running_stretch_for_g = 0.0;
+      for (int i = 0; i < g.size(); ++i) {
+        for(int j = i + 1; j < g.size(); ++j) {
+          if (skip_strech_pair(dsts_g[i][j], dsts_s[i][j]))
+            continue;
+          // Stretch factor for this pair:
+          assert(dsts_s[i][j] != std::numeric_limits<double>::infinity());
+          auto stretch = dsts_s[i][j] / dsts_g[i][j];
+          running_stretch_for_g += stretch;
+          ++stretches_considered;
+        }
+      }
+      running_stretch += running_stretch_for_g / double(stretches_considered);
     }
+    res["average_stretch"] = running_stretch / double(how_many_runs);
+    return res;
+  };
+  ofstream outfile(report_prefix + "StretchReport.json");
+  outfile << "[" << std::endl;
+  outfile << std::setw(4) << create_strech_json(start_size);
+  for (int size = start_size + 1; size < end_size; ++size) {
+    outfile << "," << std::endl << std::setw(4) << create_strech_json(size);
   }
-  return true;
+  outfile << "]" << std::endl;
 }
 
 
 int main(int argc, char** argv) {
- // CreateSpannerReport([](const auto& g) { return two_k_minus_1_spanner(5, g);},
-  //                    5, 100, 25, "k=5");
-  Graph g(5);
-  g.add_edge(0, 1, 0);
-  g.add_edge(3, 4, 0);
-  assert(g.edges() == 4);
-  g.remove_neighbors(0, [](auto&&) {return true;});
-  assert(g.edges() == 2);
+  std::thread t1( [&] () {
+      CreateSpannerEdgeNumberReport([](const auto& g) {
+          return three_spanner(g);},
+          500, 3000, 10, "3_spanner_B", 50); });
+  std::thread t2( [&] () {
+  CreateSpannerEdgeNumberReport([] (auto&& g) {
+      return two_k_minus_1_spanner(2, g);},
+      500, 3000, 10, "2k_A", 50); });
+  t1.join();
+  t2.join();
   return 0;
 }

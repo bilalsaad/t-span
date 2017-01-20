@@ -20,7 +20,7 @@ namespace{
         std::end(cluster_representives));
                     
     for (auto rep : all_clusters) {
-      if (random_real() < probability) {
+      if (rep != -1 && random_real() < probability) {
         sampled_clusters.emplace(rep);
       }
     }
@@ -181,8 +181,7 @@ namespace{
             const auto& cluster = cluster_and_edge.first;
             const auto& min_edge = cluster_and_edge.second;
             if (cluster == best_sampled.cluster ||
-                (is_sampled(min_edge.end, R_i, C_i) &&
-                min_edge < best_sampled.min_edge)) {
+                min_edge < best_sampled.min_edge) {
               // Now we remove all edges corresponding to this cluster.
               g.remove_neighbors(v, [&] (int neighbor) {
                   return C_i[neighbor] == cluster;});

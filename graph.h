@@ -102,7 +102,7 @@ namespace graphs {
       // graph to a directed one..
       template<typename Pred>
         friend Graph filter_edges(Graph g, Pred&& pred) {
-          util::scoped_timer st("filter_edges");
+          //util::scoped_timer st("filter_edges");
           for (int vertex = 0; vertex < g.size(); ++vertex) {
             auto& neighbors = g.adj_list[vertex];
             std::unordered_set<Edge> temp;

@@ -167,7 +167,7 @@ namespace graphs {
   }
 
   vector<vector<double>> floydwarshall(const Graph& g) {
-    scoped_timer st("floydwarshall");
+    //scoped_timer st("floydwarshall");
     vector<vector<double>> dists (g.size(),
         vector<double>(g.size(), std::numeric_limits<double>::infinity()));
     // Initialize the dists with the edge weight for the graph.
