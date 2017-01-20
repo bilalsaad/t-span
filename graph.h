@@ -86,10 +86,14 @@ namespace graphs {
 
       template<typename Pred>
       void remove_neighbors(int vertex, Pred&& pred) {
-        for (auto&& neighbor : adj_list[vertex]) {
+        std::vector<int> to_remove;
+        for (const auto& neighbor : adj_list[vertex]) {
           if (pred(neighbor.end)) {
-              remove_edge(vertex, neighbor.end);
+            to_remove.push_back(neighbor.end);
           }
+        }
+        for (const auto& u : to_remove) {
+          remove_edge(vertex, u);
         }
       }
 

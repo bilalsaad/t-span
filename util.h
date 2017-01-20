@@ -5,6 +5,7 @@
 #include <iostream>
 #include <random>
 
+#define db std::cout << __LINE__ << " " << __func__ << " " << std::endl;
 namespace util {
   using Clock = std::chrono::high_resolution_clock;
   using std::chrono::time_point;

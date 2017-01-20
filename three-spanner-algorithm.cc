@@ -15,7 +15,7 @@ namespace {
   using namespace std;
   using Clusters = vector<int>; 
   auto sample(const Graph& g) {
-    scoped_timer st("sample"); 
+//    scoped_timer st("sample"); 
     auto probability = 1.0 / sqrt(static_cast<double>(g.size()));
     Clusters sampled_vertices(g.size(), -1);
     srand(std::time(0));
@@ -28,7 +28,7 @@ namespace {
   } 
 
   auto form_clusters(Graph g, Graph& spanner) {
-    scoped_timer st("form_cluster");
+    //scoped_timer st("form_cluster");
     auto clusters = sample(g);
 
     // Possible optimization - give up on the unsampled_vertices and only use
@@ -78,7 +78,7 @@ namespace {
   
   auto join_clusters(const Clusters& clusters, const Graph& not_added_graph,
                      Graph& spanner) {
-    scoped_timer st("join_clusters");
+    //scoped_timer st("join_clusters");
     for (int i = 0; i < not_added_graph.size() ; ++i) {
       const auto& neighbors = not_added_graph.neighbors(i);
       unordered_map<int, Edge> cluster_representives;
@@ -98,7 +98,7 @@ namespace {
 }  // namespace.
 
 Graph three_spanner(Graph g) {
-  scoped_timer st("three-span");
+  //scoped_timer st("three-span");
   Graph spanner(g.size());
   auto clusters_and_not_added_edges = form_clusters(std::move(g), spanner);
   join_clusters(clusters_and_not_added_edges.first,

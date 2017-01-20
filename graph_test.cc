@@ -195,9 +195,36 @@ void test_simple_spanner(const Graph& g) {
   cout << "Expected number of edges: " <<  expected_edges << endl;
   cout << "actual / expected: " << spanner.edges() / expected_edges << endl;
 }
+
+template<typename SpannerAlg>
+bool CreateSpannerReport(SpannerAlg&& alg,
+    int start_size,
+    int end_size,
+    int how_many_runs,
+    const string& report_prefix = "") {
+  ofstream outfile( report_prefix + "graph_report");
+
+  for (int size = start_size ; size < end_size; ++size) {
+    for(int j = 0; j < how_many_runs; ++j) {
+      outfile << size << " ";
+      auto g = randomGraph(size);
+      auto spanner = alg(g);
+      outfile << g.edges() << " ";
+      outfile << spanner.edges() << "\n";
+    }
+  }
+  return true;
+}
+
+
 int main(int argc, char** argv) {
-  auto g = randomGraph(argc > 1 ? std::stoi(*(argv+1)) : 5);
-  two_k_minus_1_spanner(3, g);
-  if (g.size() < 1000) log_last_graph(g);
+ // CreateSpannerReport([](const auto& g) { return two_k_minus_1_spanner(5, g);},
+  //                    5, 100, 25, "k=5");
+  Graph g(5);
+  g.add_edge(0, 1, 0);
+  g.add_edge(3, 4, 0);
+  assert(g.edges() == 4);
+  g.remove_neighbors(0, [](auto&&) {return true;});
+  assert(g.edges() == 2);
   return 0;
 }

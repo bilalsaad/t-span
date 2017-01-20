@@ -6,6 +6,7 @@
 #include <unordered_set>
 #include <queue>
 #include <functional>
+#include <cassert>
 
 namespace graphs {
   using util::scoped_timer;
@@ -15,8 +16,10 @@ namespace{
   
   auto sample (const vector<int>& cluster_representives, double probability) {
     std::unordered_set<int> sampled_clusters;
-
-    for (auto rep : cluster_representives) {
+    std::unordered_set<int> all_clusters(std::begin(cluster_representives),
+        std::end(cluster_representives));
+                    
+    for (auto rep : all_clusters) {
       if (random_real() < probability) {
         sampled_clusters.emplace(rep);
       }
@@ -59,7 +62,6 @@ namespace{
     return result;
   }
 
-
   struct ClusterAndEdge {
     int cluster; 
     Edge min_edge;
@@ -94,8 +96,26 @@ namespace{
                     return {rep_and_edge.first, rep_and_edge.second};
                    });
     std::make_heap(std::begin(result), std::end(result),
-        [] (auto&& a, auto&& b) { return a > b;});
+        [] (const auto& a, const auto& b) { return a > b;});
     return result;
+  }
+
+  // Given a vertex 'vertex' returns a map where for each cluster in 'clusters'
+  // there is the value of a minimum edge from 'vertex' to that cluster.
+  auto create_cluster_to_min_edge_map(const Graph& g,
+      int vertex,
+      const Clusters& clusters) {
+    std::unordered_map<int, Edge> cluster_representives;
+    for (const auto& e : g.neighbors(vertex)) {
+      int cluster = clusters[e.end];
+      auto current_rep = cluster_representives.find(cluster);
+      if (current_rep == std::end(cluster_representives)) {
+        cluster_representives.emplace(clusters[cluster], e);
+      } else if (current_rep->second > e) {
+        current_rep->second = e;
+      }
+    }
+    return cluster_representives;
   }
 
   bool is_sampled(int vertex, const std::unordered_set<int>& samples,
@@ -112,13 +132,13 @@ namespace{
   } 
 
   auto form_clusters(Graph g, Graph& spanner, int k) {
-    auto V_i= numbers_to_n(g.size());
+    auto V_i = numbers_to_n(g.size());
     auto C_i = numbers_to_n(g.size());
     vector<int> V_i_next;
     Clusters C_i_next;
-    double probability = pow(g.size(), -1.0 / static_cast<double>(k));
-    cout << probability << endl;
-    for (int i = 0; i < (k / 2); ++i) {
+    int edges_added = 0;
+    const double& probability = pow(g.size(), -1.0 / static_cast<double>(k));
+    for (int i = 0; i < k ; ++i) {
       auto R_i = sample(C_i, probability);
       V_i_next = add_vertices_from_clusters(R_i, C_i);
       C_i_next = create_clusters_from_samples(R_i, C_i);
@@ -126,41 +146,51 @@ namespace{
       for (auto v : V_i) {
         // Only iterate non vertices not in sampled clusters.
         if (is_sampled(v, R_i, C_i)) {
-          cout << "Skipping vertex: " << v << endl;
           continue;
         }
-        auto min_edge_heap =
-          create_cluster_to_min_edge_heap(g, v, C_i);
+        auto cluster_min_edge_map = create_cluster_to_min_edge_map(g, v, C_i);
         // If the vertex has no adjacent sampled clusters, we add the minimum
         // edge of all of its neighbors.
         if (std::none_of(std::begin(g.neighbors(v)),
               std::end(g.neighbors(v)),
-              [&] (auto&& neighbor) {
+              [&] (const auto& neighbor) {
               return is_sampled(neighbor.end, R_i, C_i);})) {
+          //cout << "No Sampled neighbors " << endl;
           g.clear_neighbors(v);
-
-          while (!min_edge_heap.empty()) {
-            auto min_edge = get_top<ClusterAndEdge>(min_edge_heap); 
-            spanner.add_edge(v, min_edge.min_edge.end, min_edge.min_edge.w);
-          }
+          for (auto&& cluster_and_edge : cluster_min_edge_map) {
+            ++edges_added;
+            spanner.add_edge(v,
+                cluster_and_edge.second.end,
+                cluster_and_edge.second.w);
+          } 
         } else {  // V is adjacent to a sampled cluster.
-          // In this case we add the minimum edges corresponding to the adjacent
-          // clusters until we reach a sampled one. Removing all the edges of
-          // the clusters we add.
-          int cluster = -1;
-          while (!min_edge_heap.empty() && cluster != -1) {
-            auto min_edge = get_top<ClusterAndEdge>(min_edge_heap); 
-            auto end_point = min_edge.min_edge.end;
-            // Now we remove all edges corresponding to this cluster.
-            g.remove_neighbors(v, [&] (int neighbor) {
-                return C_i[neighbor] == min_edge.cluster;});
-            spanner.add_edge(v, end_point, min_edge.min_edge.w);
-            if (is_sampled(end_point, R_i, C_i)) {
-              cluster = min_edge.cluster;
+          ClusterAndEdge sentinel_edge =
+            {-1, {-1, std::numeric_limits<double>::max()}};
+          auto best_sampled = std::accumulate(std::begin(cluster_min_edge_map),
+              std::end(cluster_min_edge_map), sentinel_edge,
+              [&] (auto&& best_sampled, auto&& next) {
+                if (is_sampled(next.second.end, R_i, C_i)
+                    && next.second < best_sampled.min_edge)
+                    return ClusterAndEdge{next.first, next.second}; 
+                return best_sampled;
+              });
+          assert(best_sampled.cluster != sentinel_edge.cluster);
+          C_i_next[v] = best_sampled.cluster;
+          V_i_next.push_back(v);
+          for (const auto& cluster_and_edge : cluster_min_edge_map) {
+            const auto& cluster = cluster_and_edge.first;
+            const auto& min_edge = cluster_and_edge.second;
+            if (cluster == best_sampled.cluster ||
+                (is_sampled(min_edge.end, R_i, C_i) &&
+                min_edge < best_sampled.min_edge)) {
+              // Now we remove all edges corresponding to this cluster.
+              g.remove_neighbors(v, [&] (int neighbor) {
+                  return C_i[neighbor] == cluster;});
+              spanner.add_edge(v, min_edge.end, min_edge.w);
+              ++edges_added;
             }
           }
-          C_i_next[v] = cluster;
-          V_i_next.push_back(v);
+
         } 
       }
 
@@ -176,13 +206,13 @@ namespace{
       C_i = std::move(C_i_next);
       V_i = std::move(V_i_next);
     }
-
+    //cout << "edges added to spanner: " << edges_added << endl;
     return std::make_pair(g, C_i);
   }
 
 
   template<typename Container, typename Key, typename Value, typename KeyPred,
-            typename ValuePred>
+    typename ValuePred>
   void replace_if_pred_in_map(Container& container, Key&& key, Value&& v,
                               KeyPred&& key_pred, ValuePred&& value_pred) {
     auto iter = std::find_if(std::begin(container),
@@ -252,12 +282,8 @@ namespace{
 Graph two_k_minus_1_spanner(int k, Graph g) {
   Graph spanner(g.size());
   auto end_of_phase_1 = form_clusters(g, spanner, k);
-  cout << "The spanner edges: " << spanner.edges() << endl;
-  join_clusters(end_of_phase_1.first,spanner, end_of_phase_1.second);
-  cout << "The spanner: " << spanner << endl;
-  cout << "The spanner edges: " << spanner.edges() << endl;
-  cout << "The g edges: " << g.edges() << endl;
-  //cout << "The g : " << g << endl;
+  //join_clusters(end_of_phase_1.first, spanner, end_of_phase_1.second);
+  
   return spanner;
 }
 
