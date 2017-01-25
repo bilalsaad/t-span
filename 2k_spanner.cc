@@ -4,15 +4,18 @@
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
+#include <map>
 #include <queue>
 #include <functional>
 #include <cassert>
+#include <iomanip>
 
 namespace graphs {
   using util::scoped_timer;
   using util::random_real;
 namespace{
   using Clusters = vector<int>;
+  using SampleType = std::unordered_set<int>;
   
   auto sample (const vector<int>& cluster_representives, double probability) {
     std::unordered_set<int> sampled_clusters;
@@ -131,17 +134,50 @@ namespace{
     return min_edge;
   } 
 
-  auto form_clusters(Graph g, Graph& spanner, int k) {
+  void print_iteration_info(int iteration, const Clusters& clusters,
+      const SampleType& samples, std::ostream& out) {
+    out << "Iteration: " << iteration << std::endl;
+    out << "Clusters: " << std::endl;
+    std::map<int, std::vector<int>> cluster_elaborate;
+    for (int i = 0; i < clusters.size(); ++i) {
+      cluster_elaborate[clusters[i]].emplace_back(i);
+    }
+    for (const auto& cluster : cluster_elaborate) {
+      const auto& c = cluster.first;
+      const auto& vs = cluster.second;
+      out << "  Cluster:" << c << std::endl;
+      for (auto&& v : vs) {
+        out << v << ", ";
+      }
+      out << std::endl;
+    }
+
+    out << std::endl << " SampledClusters: " << std::endl;
+    for (const auto& sample : samples) {
+      out << sample << ", "; 
+    }
+    out << std::endl << "END ITERATION \n\n";
+  }
+
+  struct form_cluster_ret {
+    Clusters last_clustering;
+    Clusters before_last;
+    Graph not_added;
+  };
+
+  auto form_clusters(Graph g, Graph& spanner, int k, std::ostream& out) {
     auto V_i = numbers_to_n(g.size());
     auto C_i = numbers_to_n(g.size());
     vector<int> V_i_next;
     Clusters C_i_next;
+    Clusters C_before_last;
     int edges_added = 0;
     const double& probability = pow(g.size(), -1.0 / static_cast<double>(k));
-    for (int i = 0; i < k ; ++i) {
+    for (int i = 0; i < k / 2 ; ++i) {
       auto R_i = sample(C_i, probability);
       V_i_next = add_vertices_from_clusters(R_i, C_i);
       C_i_next = create_clusters_from_samples(R_i, C_i);
+      print_iteration_info(i, C_i, R_i, out);
 
       for (auto v : V_i) {
         // Only iterate non vertices not in sampled clusters.
@@ -155,7 +191,6 @@ namespace{
               std::end(g.neighbors(v)),
               [&] (const auto& neighbor) {
               return is_sampled(neighbor.end, R_i, C_i);})) {
-          //cout << "No Sampled neighbors " << endl;
           g.clear_neighbors(v);
           for (auto&& cluster_and_edge : cluster_min_edge_map) {
             ++edges_added;
@@ -202,11 +237,12 @@ namespace{
       }
 
       // Next iteration initializations.
+      C_before_last = std::move(C_i);
       C_i = std::move(C_i_next);
       V_i = std::move(V_i_next);
     }
-    //cout << "edges added to spanner: " << edges_added << endl;
-    return std::make_pair(g, C_i);
+
+    return form_cluster_ret {C_i, C_before_last, g};
   }
 
 
@@ -226,10 +262,8 @@ namespace{
     }
   }
 
-  // Assume this is the case of odd k..
   auto join_clusters(const Graph& not_yet_added, Graph& spanner,
-      const Clusters& clusters) {
-
+      const Clusters& last_clustering, const Clusters& before_last_clustering) {
     auto pair_hash = [] (const std::pair<int, int>& pair) -> size_t {
       return pair.first ^ pair.second;
     };
@@ -255,12 +289,12 @@ namespace{
     // Now we iterate over all the edges in not_yet_added maintaining the min
     // edge for each pair of clusters.
     for (int v = 0; v < not_yet_added.size(); ++v) {
-      if (not_yet_added.neighbors(v).empty() || clusters[v] == -1)
+      if (not_yet_added.neighbors(v).empty() || last_clustering[v] == -1)
          continue;
-      int v_cluster = clusters[v];
+      int v_cluster = last_clustering[v];
       for (const auto& edge : not_yet_added.neighbors(v)) {
         //assert(clusters[edge.end] != v_cluster);
-        int neighbor_cluster = clusters[edge.end];
+        int neighbor_cluster = before_last_clustering[edge.end];
         replace_if_pred_in_map<decltype(map)>(map,
             std::make_pair(v_cluster, neighbor_cluster),
             ExtendedEdge(v, edge.end, edge.w), compare_pairs,
@@ -270,7 +304,6 @@ namespace{
             );
        }
     }
-
     for(const auto& e : map) {
       spanner.add_edge(e.second.u, e.second.v, e.second.w);
     }
@@ -278,10 +311,13 @@ namespace{
 }  // namespace.
 
 
-Graph two_k_minus_1_spanner(int k, Graph g) {
+Graph two_k_minus_1_spanner(int k, Graph g, std::ostream& out) {
   Graph spanner(g.size());
-  auto end_of_phase_1 = form_clusters(g, spanner, k);
-  //join_clusters(end_of_phase_1.first, spanner, end_of_phase_1.second);
+  auto end_of_phase_1 = form_clusters(g, spanner, k, out);
+  join_clusters(end_of_phase_1.not_added, spanner,
+      end_of_phase_1.last_clustering,
+      ((k % 2) == 0) ? end_of_phase_1.before_last :
+      end_of_phase_1.last_clustering);
   
   return spanner;
 }

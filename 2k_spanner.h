@@ -4,7 +4,7 @@
 
 namespace graphs {
 
-  Graph two_k_minus_1_spanner(int k, Graph g);
+  Graph two_k_minus_1_spanner(int k, Graph g, std::ostream& out = std::cout);
 
 }  // namespace graphs.
 #endif

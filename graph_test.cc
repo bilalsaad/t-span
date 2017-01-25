@@ -183,20 +183,21 @@ void test_random_vs_warshall(int size) {
   cout << dists_g.size() << endl;
 }
 
-void log_last_graph(const Graph& g) {
-  ofstream last_graph_log;
-  last_graph_log.open("last_graph_log.txt");
+void log_last_graph(const Graph& g, const string& prefix = "") {
+  ofstream last_graph_log(prefix + "last_graph_log.txt");
   last_graph_log << g;
-  last_graph_log.close();
 }
 
-void test_simple_spanner(const Graph& g) {
-  auto expected_edges = g.size() * sqrt(g.size());
-  auto spanner = three_spanner(g);
-  cout << "Number of edges in spanner: " << spanner.edges() << endl;
+void test_simple_spanner(const Graph& g, int k = 2) {
+  //auto expected_edges = g.size() * sqrt(g.size());
+  auto spanner = two_k_minus_1_spanner(k, g);
+  auto spanner2 = three_spanner(g);
+  cout << "Number of edges in spanner using generic: " << spanner.edges() <<
+    endl;
+  cout << "Number of edges in spanner using 3 span: " << spanner.edges() <<
+    endl;
   cout << "Number of edges in graph: " << g.edges() << endl;
-  cout << "Expected number of edges: " <<  expected_edges << endl;
-  cout << "actual / expected: " << spanner.edges() / expected_edges << endl;
+  log_last_graph(spanner, "spanner_");
 }
 
 template<typename SpannerAlg>
@@ -251,19 +252,22 @@ void CreateSpannerStretchReport(SpannerAlg&& alg,
       auto dsts_g = floydwarshall(g);
       auto dsts_s = floydwarshall(spanner);
       int stretches_considered = 0;
-      double running_stretch_for_g = 0.0;
+      double max_stretch_for_g = 0.0;
       for (int i = 0; i < g.size(); ++i) {
         for(int j = i + 1; j < g.size(); ++j) {
           if (skip_strech_pair(dsts_g[i][j], dsts_s[i][j]))
             continue;
           // Stretch factor for this pair:
-          assert(dsts_s[i][j] != std::numeric_limits<double>::infinity());
+         if (dsts_s[i][j] == std::numeric_limits<double>::infinity()) {
+           assert(false);
+         }
           auto stretch = dsts_s[i][j] / dsts_g[i][j];
-          running_stretch_for_g += stretch;
+          assert(dsts_s[i][j] >= dsts_g[i][j]);
+          max_stretch_for_g = std::max(max_stretch_for_g, stretch);
           ++stretches_considered;
         }
       }
-      running_stretch += running_stretch_for_g / double(stretches_considered);
+      running_stretch += max_stretch_for_g;
     }
     res["average_stretch"] = running_stretch / double(how_many_runs);
     return res;
@@ -277,16 +281,51 @@ void CreateSpannerStretchReport(SpannerAlg&& alg,
   outfile << "]" << std::endl;
 }
 
+auto last_graph() {
+  Graph g(5);
+  // edges for 0
+  vector<Edge> edges = {{3, 179.431}, {2, 156.348}};
+  g.add_vertex_with_edges(0, edges);
+  // edges for 1
+  edges = {};
+  g.add_vertex_with_edges(1, edges);
+  // edges for 2
+  edges = {{0,156.348}};
+  g.add_vertex_with_edges(2, edges);
+  // edges for 3
+  edges = {{4, 115.096}, {0, 179.431}};
+  g.add_vertex_with_edges(3, edges);
+  // edges for 4
+  edges = {{3,115.096}};
+  g.add_vertex_with_edges(4, edges);
+  return g;
+}
+
+bool check_disconnection(const Graph& g, const Graph& spanner) {
+  auto dsts_g = floydwarshall(g);
+  auto dsts_s = floydwarshall(spanner); 
+      for (int i = 0; i < g.size(); ++i) {
+        for(int j = i + 1; j < g.size(); ++j) {
+          if (dsts_g[i][j] != std::numeric_limits<double>::infinity() &&
+              dsts_s[i][j] == std::numeric_limits<double>::infinity()) {
+              cout << "found bad pair " << i << ", " << j << endl;
+              return true;
+          }
+        }
+      }
+  return false;
+}
 
 int main(int argc, char** argv) {
+  std::ofstream out("/dev/null");
   std::thread t1( [&] () {
-      CreateSpannerEdgeNumberReport([](const auto& g) {
+      CreateSpannerStretchReport([](const auto& g) {
           return three_spanner(g);},
-          500, 3000, 10, "3_spanner_B", 50); });
+          10, 50, 10, "3_spanner_B"); });
   std::thread t2( [&] () {
-  CreateSpannerEdgeNumberReport([] (auto&& g) {
-      return two_k_minus_1_spanner(2, g);},
-      500, 3000, 10, "2k_A", 50); });
+      CreateSpannerStretchReport([&] (auto&& g) {
+          return two_k_minus_1_spanner(5, g, out);},
+          10, 50, 10, "5k_A"); });
   t1.join();
   t2.join();
   return 0;
