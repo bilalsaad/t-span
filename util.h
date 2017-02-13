@@ -1,11 +1,14 @@
+
 #ifndef UTIL_H
 #define UTIL_H
 #include <chrono>
 #include <string>
 #include <iostream>
 #include <random>
-
-#define db std::cout << __LINE__ << " " << __func__ << " " << std::endl;
+#include <cassert>
+#include <unordered_map>
+#include <experimental/optional>
+#include "json.hpp"
 namespace util {
   using Clock = std::chrono::high_resolution_clock;
   using std::chrono::time_point;
@@ -28,6 +31,24 @@ namespace util {
   };
 
   // returns a random real number between 0 .. 1
-  double random_real();
+  double random_real(std::experimental::optional<int> seed = {});
+
+  // flag stuff
+  void add_int_flag(const std::string& flagname, const std::string& desc,
+      int default_val);
+  void add_string_flag(const std::string& flagname, const std::string& desc,
+      std::string default_val);
+  void add_bool_flag(const std::string& flagname, const std::string& desc,
+      bool default_val);
+  void add_double_flag(const std::string& flagname, const std::string& desc,
+      double default_val);
+  bool get_bool_flag(const std::string& fname);
+  double get_double_flag(const std::string& fname);
+  std::string get_string_flag(const std::string& fname);
+  int get_int_flag(const std::string& fname);
+  void parse_flags(int argc, char** argv);
+  bool is_flag_set(const std::string& fname);
+
+  std::string random_string(size_t length);
 } // namespace util.
 #endif

@@ -28,14 +28,14 @@ namespace graphs {
     return a.size() == b.size() && is_included(a, b) && is_included(b, a);
   }
 
-  Graph randomGraph(int num_v) {
+  Graph randomGraph(int num_v, double edge_density) {
     //scoped_timer st(
     //    "building graph with " + std::to_string(num_v) + " vertices");
     Graph result(num_v);
     for (int i = 0; i < num_v; ++i) {
       for (int j = i + 1; j < num_v; ++j) {
-        // Flip a coin to decide wether to add edge <i, j>
-        if (random_real() < 0.5) {
+        // Flip a coin to decide wether to add edge <i, j> according to density.
+        if (random_real() < edge_density) {
           result.add_edge(i, j,
               static_cast<double>((random_real() * 100.0) + 90));
         }
@@ -195,6 +195,22 @@ namespace graphs {
     return dists;
   }
 
+  // TODO: Using floydwarshall to check this is VERY slow, should do a dfs or 
+  // bfs.
+  bool check_subgraph_disconnection(const Graph& g, const Graph& subgraph) {
+    auto dsts_g = floydwarshall(g);
+    auto dsts_s = floydwarshall(subgraph); 
+    for (int i = 0; i < g.size(); ++i) {
+      for(int j = i + 1; j < g.size(); ++j) {
+        if (dsts_g[i][j] != std::numeric_limits<double>::infinity() &&
+            dsts_s[i][j] == std::numeric_limits<double>::infinity()) {
+          cout << "found bad pair " << i << ", " << j << endl;
+          return true;
+        }
+      }
+    }
+    return false;
+  }
 
   void Graph::clear_neighbors(int v) {
     for (const auto& edge : adj_list[v]) {

@@ -177,7 +177,7 @@ namespace{
       auto R_i = sample(C_i, probability);
       V_i_next = add_vertices_from_clusters(R_i, C_i);
       C_i_next = create_clusters_from_samples(R_i, C_i);
-      print_iteration_info(i, C_i, R_i, out);
+      //print_iteration_info(i, C_i, R_i, out);
 
       for (auto v : V_i) {
         // Only iterate non vertices not in sampled clusters.

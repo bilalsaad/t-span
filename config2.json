@@ -1,0 +1,16 @@
+[
+  {
+    "type" : "EdgeCount" ,
+    "num_runs_per_size" : 30 ,
+    "sizes" : [500, 550, 600, 650, 700, 750, 800, 850, 900, 1000] ,
+    "k" : 4 ,
+    "density" : 0.8
+  },
+  {
+    "type" : "EdgeCount" ,
+    "num_runs_per_size" : 5 ,
+    "sizes" : [500, 550, 600, 650, 700, 750, 800, 850, 900, 1000] ,
+    "k" : 4 ,
+    "density" : 0.5
+  }
+]

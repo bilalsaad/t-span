@@ -118,8 +118,10 @@ namespace graphs {
       void clear_neighbors(int v);
   };
 
+  bool check_subgraph_disconnection(const Graph& g, const Graph& subgraph);
+
   // Generates a random graph with n vertices.
-  Graph randomGraph(int n);
+  Graph randomGraph(int n, double edge_density = 0.5);
   std::experimental::optional<Graph> parse_input(std::fstream&);
   vector<double> bellmanford(const Graph& g, int src);
   vector<vector<double>> floydwarshall(const Graph& g);

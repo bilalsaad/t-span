@@ -1,4 +1,5 @@
 import json
+import glob
 from pprint import pprint
 import matplotlib.pyplot as plt
 
@@ -50,4 +51,39 @@ def compare_2k_3(kfname = 'build/2k_Agraph_report.json',
     plt.ylabel('# number_of_edges')
     plt.xlabel('# number_of_vertices')
     plt.show()
-stretch_factor()
+
+def get_expected_edge_number(num_vertices, k):
+    return [ k * (x ** (1.0 + 1.0 / k)) for x in num_vertices] 
+
+def get_report_id(edge_report):
+    return 'edgegraph_{0}_{1}.png'.format(
+            edge_report['k'], edge_report['density'])
+def get_report_info(edge_report):
+    return 'Algorithm params: k = {0}, density = {1}'.format(edge_report['k'],
+                                                      edge_report['density'])
+
+def create_edge_number_graph(edge_report):
+    f = plt.figure()
+    f.suptitle(get_report_info(edge_report[0]), fontsize=14, fontweight='bold')
+
+    num_vertices, num_edges = \
+        get_x_y(edge_report, 'size', 'average_spanner_size')
+    k = edge_report[0]['k']
+    expected_ys = get_expected_edge_number(num_vertices, k)
+    report_plot, = plt.plot(num_vertices, num_edges, "r", label = 'spanner alg')
+    expected_plot, = plt.plot(num_vertices, expected_ys, "g",
+            label = 'O(kn^(1+1/k))')
+    plt.legend(handles=[report_plot, expected_plot])
+    plt.legend(bbox_to_anchor=(0.05, 1), loc=2, borderaxespad=18.)
+    plt.ylabel('# number_of_edges')
+    plt.xlabel('# number_of_vertices')
+    plt.show()
+    plt.savefig('stats/' + get_report_id(edge_report[0]))
+    plt.close()
+
+def edge_reports(pattern = 'build/out/EdgeReport*'):
+    edge_reports = glob.glob(pattern)
+    for edge_report in edge_reports:
+        create_edge_number_graph(get_json_array(edge_report))
+
+edge_reports();

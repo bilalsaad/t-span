@@ -1,0 +1,44 @@
+[
+  {
+    "type" : "EdgeCount" ,
+    "num_runs_per_size" : 30 ,
+    "sizes" : [5, 10, 15, 20, 25, 30, 40, 45, 50] ,
+    "k" : 3 ,
+    "density" : 0.5
+  },
+  {
+    "type" : "EdgeCount" ,
+    "num_runs_per_size" : 30 ,
+    "sizes" : [5, 10, 15, 20, 25, 30, 40, 45, 50] ,
+    "k" : 3 ,
+    "density" : 0.8
+  },
+  {
+    "type" : "EdgeCount" ,
+    "num_runs_per_size" : 30 ,
+    "sizes" : [5, 10, 15, 20, 25, 30, 40, 45, 50] ,
+    "k" : 4 ,
+    "density" : 0.5
+  },
+  {
+    "type" : "EdgeCount" ,
+    "num_runs_per_size" : 30 ,
+    "sizes" : [5, 10, 15, 20, 25, 30, 40, 45, 50] ,
+    "k" : 4 ,
+    "density" : 0.8
+  },
+  {
+    "type" : "EdgeCount" ,
+    "num_runs_per_size" : 30 ,
+    "sizes" : [50, 60, 70, 80] ,
+    "k" : 4 ,
+    "density" : 0.8
+  },
+  {
+    "type" : "EdgeCount" ,
+    "num_runs_per_size" : 5 ,
+    "sizes" : [500, 550, 600] ,
+    "k" : 4 ,
+    "density" : 0.5
+  }
+]
