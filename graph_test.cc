@@ -133,6 +133,52 @@ void CreateSpannerStretchReport(SpannerAlg&& alg,
   outfile << "]" << std::endl;
 }
 
+
+// Returns the maximum stretch for g, s where s is a subgraph of g.
+auto MaxStretch(const Graph& g, const Graph& s) {
+  auto dsts_g = floydwarshall(g);
+  auto dsts_s = floydwarshall(s);
+  double max_stretch = 0.0;
+  // If two vertices were disconnected in g, we don't check for them, since
+  // in such a case our algorithm would divide by \inf.
+  auto skip_strech_pair = [&] (auto&& g_dst, auto&& s_dst) -> bool {
+    return g_dst == std::numeric_limits<double>::infinity() ||
+      g_dst == 0;
+  };
+  for (int i = 0; i < g.size(); ++i) {
+    for(int j = i + 1; j < g.size(); ++j) {
+      if (skip_strech_pair(dsts_g[i][j], dsts_s[i][j]))
+        continue;
+      // Stretch factor for this pair:
+      if (dsts_s[i][j] == std::numeric_limits<double>::infinity()) {
+        assert(false);
+      }
+      auto stretch = dsts_s[i][j] / dsts_g[i][j];
+      assert(dsts_s[i][j] >= dsts_g[i][j]);
+      max_stretch = std::max(max_stretch, stretch);
+    }
+  }
+  return max_stretch;
+}
+
+template<typename SpannerAlg>
+json MaxStretchExperiment(SpannerAlg&& alg, const ExperimentArgs& args ) {
+  json result;
+  result["size"] = args.graph_size;
+  result["k"] = args.k;
+  result["density"] = args.graph_density;
+  result["num_runs"] = args.num_runs;
+  double max_stretch = 0.0;
+  for (int i = 0; i < args.num_runs; ++i) {
+    auto g = randomGraph(args.graph_size, args.graph_density);
+    auto spanner = alg(g);
+    max_stretch = std::max(max_stretch, MaxStretch(g, spanner));
+  }
+  result["max_stretch"] = max_stretch;
+  return result;
+}
+
+
 constexpr char kConfigFileFlag[] = "experiments_config_file";
 
 void init(int argc, char** argv) {
@@ -147,45 +193,106 @@ void init(int argc, char** argv) {
   assert(util::is_flag_set("experiments_config_file"));
 }
 
+enum class  AlgorithmType {
+  THREE_SPANNER,
+  TWO_K_SPANNER,
+};
 
-template<typename ExperimentFunc>
-void ConductExperiments(const json& experiment_config,
-    const string& report_suffix,
-    ExperimentFunc&& exp_func) {
-  auto edge_count_experiment = [&report_suffix, &exp_func]
-    (int experiment_index, auto&& exp_info) {
-      std::vector<std::future<json>> futures(exp_info["sizes"].size()); 
-      for (int i = 0; i < futures.size(); ++i) {
-        auto&& sz = exp_info["sizes"][i];
-        ExperimentArgs args(sz, exp_info);
-        futures[i] = std::async(exp_func, args);
-      }
-      ofstream outfile(
-          "out/EdgeReport" + std::to_string(experiment_index) + "_"
-          + report_suffix + ".json"); 
-      outfile << "[";
-      string separator = "";
-      for (auto& f : futures) {
-        auto res = f.get();
-        outfile << separator << std::endl << std::setw(4) << res;
-        separator = ",";
-      }
-      outfile << "]";
+enum class ExperimentType {
+  EDGE_COUNT,
+  MAX_STRETCH,
+};
+
+ExperimentType TypeFromString(const string& type) {
+  constexpr char kEdgeCount[] = "EdgeCount";
+  constexpr char kMaxStretch[] = "MaxStretch";
+  if (type == kEdgeCount)
+    return ExperimentType::EDGE_COUNT;
+  if (type == kMaxStretch)
+    return ExperimentType::MAX_STRETCH;
+    std::cout << "Invalid experiment typename must be " << kEdgeCount << " or "
+      << kMaxStretch;
+    assert(false);
+}
+
+class Experimentor {
+  public:
+    json operator()(const ExperimentArgs& args) {
+      return func(args);
     };
+    // Creates an Experimentor object, that once called will conduct on the
+    // correct experiment according to 'alg_type' and 'exp_type'.
+    static Experimentor CreateExperimentor(AlgorithmType alg_type,
+        ExperimentType exp_type) {
+      static auto three_span = [] (auto&& g) {return three_spanner(g);};
+      switch (alg_type) {
+        case AlgorithmType::THREE_SPANNER:
+          switch (exp_type) {
+            case ExperimentType::EDGE_COUNT: 
+             return {[] (const ExperimentArgs& args) {
+               return EdgeNumberExperiment(three_spanner, args);
+             }};
+            case ExperimentType::MAX_STRETCH:
+             return { [] (const ExperimentArgs& args) -> json {
+               return MaxStretchExperiment(three_spanner, args);
+             }};
+          }
 
+        case AlgorithmType::TWO_K_SPANNER:
+          switch (exp_type) {
+            case ExperimentType::EDGE_COUNT: 
+             return {[] (const ExperimentArgs& args) {
+               return EdgeNumberExperiment([k=args.k] (auto&& g) {
+                   return two_k_minus_1_spanner(k, g);}, args);
+             }};
+            case ExperimentType::MAX_STRETCH:
+             return { [] (const ExperimentArgs& args) -> json {
+               return {};
+             }};
+          }
+      } 
+    }
+  private:
+    using f_type = std::function<json(const ExperimentArgs& args)>;
+    Experimentor(f_type f): func(f) {}
+    f_type func;
+};
+
+
+void ConductExperiments(const json& experiment_config,
+    const string& report_suffix, AlgorithmType alg_type) {
+  auto experiment_conductor = [&report_suffix] (auto&& exp_func,
+      int experiment_index, auto&& exp_info) {
+    std::vector<std::future<json>> futures(exp_info["sizes"].size()); 
+    for (int i = 0; i < futures.size(); ++i) {
+      auto&& sz = exp_info["sizes"][i];
+      ExperimentArgs args(sz, exp_info);
+      futures[i] = std::async(exp_func, args);
+    }
+    ofstream outfile(
+        "out/Report" + std::to_string(experiment_index) + "_"
+        + report_suffix + ".json"); 
+    outfile << "[";
+    string separator = "";
+    for (auto& f : futures) {
+      auto res = f.get();
+      outfile << separator << std::endl << std::setw(4) << res;
+      separator = ",";
+    }
+    outfile << "]";
+  };
 
   std::cout << experiment_config << std::endl;
-  constexpr char kEdgeCount[] = "EdgeCount";
   std::vector<std::future<void>> futures(experiment_config.size()); 
   for (int i = 0; i < experiment_config.size(); ++i) {
-    if (experiment_config[i]["type"] == kEdgeCount) {
-      futures[i] = std::async(edge_count_experiment, i, experiment_config[i])  ;
-    }
+    auto exp_type = TypeFromString(experiment_config[i]["type"]);
+    auto exp_runner = Experimentor::CreateExperimentor(alg_type, exp_type);
+    futures[i] = std::async(experiment_conductor, exp_runner, i,
+        experiment_config[i]);
   }
   for (auto& f : futures) {
     f.get();
   }
-
 }
 
 int main(int argc, char** argv) {
@@ -201,7 +308,7 @@ int main(int argc, char** argv) {
     };
     const std::string& report_suffix =
       ".2k." + util::get_string_flag("report_suffix"); 
-    ConductExperiments(experiments, report_suffix, experiment_func);
+    ConductExperiments(experiments, report_suffix, AlgorithmType::TWO_K_SPANNER);
   } else if (config_json["type"] == "3_spanner") {
     auto experiment_func = [] (const ExperimentArgs& args) {
       return EdgeNumberExperiment([] (auto&& g) {
@@ -209,7 +316,7 @@ int main(int argc, char** argv) {
     };
     const std::string& report_suffix =
       ".3." + util::get_string_flag("report_suffix"); 
-    ConductExperiments(experiments, report_suffix, experiment_func);
+    ConductExperiments(experiments, report_suffix, AlgorithmType::THREE_SPANNER);
   } else {
     std::cout << "Invalid typename must be 2k_spanner or 3_spanner .";
     assert(false);

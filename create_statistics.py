@@ -65,8 +65,8 @@ def get_expected_edge_number(num_vertices, k):
     return [ 2 * k * (x ** (1.0 + 1.0 / k)) for x in num_vertices] 
 
 def get_report_id(edge_report):
-    return 'edgegraph_{0}_{1}.png'.format(
-            edge_report['k'], edge_report['density'])
+    return 'edgegraph_{0}_{1}_png'.format(
+            edge_report['k'], int(edge_report['density'] * 10))
 def get_report_info(edge_report):
     if edge_report['k'] < 0: # three_spanner algorithm
         alg_description = "Three - Spanner"
@@ -96,12 +96,37 @@ def create_edge_number_graph(edge_report):
     plt.show()
     plt.close()
 
+def create_max_stretch_report(stretch_report):
+    f = plt.figure()
+    f.suptitle(get_report_info(stretch_report[0]), fontsize=14, fontweight='bold')
+
+    num_vertices, num_edges = \
+        get_x_y(stretch_report, 'size', 'max_stretch')
+    k = stretch_report[0]['k']
+    k = k if k > 0 else 2 # if k < 0 this means it was three_spanner.
+    report_plot, = plt.plot(num_vertices, num_edges, "r", label = 'spanner alg')
+    expected_ys = [3 for x in num_vertices]
+    expected_plot, = plt.plot(num_vertices, expected_ys, "g", label = 'k)')
+    plt.legend(handles=[report_plot, expected_plot])
+    plt.legend(bbox_to_anchor=(0.05, 1), loc=2, borderaxespad=18.)
+    plt.ylabel('max_stretch')
+    plt.xlabel('# number_of_vertices')
+    if args.save_files:
+        plt.savefig('stats/' + get_report_id(stretch_report[0]))
+        print 'save files'
+    plt.show()
+    plt.close()
+
 def edge_reports(pattern = 'build/out/EdgeReport*'):
     edge_reports = glob.glob(pattern)
     for edge_report in edge_reports:
         create_edge_number_graph(get_json_array(edge_report))
 
-
+def stretch_reports(pattern = 'build/out/EdgeReport*'):
+    stretch_reports = glob.glob(pattern)
+    for stretch_report in stretch_reports:
+        print stretch_report
+        create_max_stretch_report(get_json_array(stretch_report))
 
 if __name__ == "__main__":
-    edge_reports('build/out/*hB2ivDL.json');
+    stretch_reports('build/out/*zwjc5U9*');
