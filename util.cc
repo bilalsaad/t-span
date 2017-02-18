@@ -163,10 +163,11 @@ std::string random_string( size_t length ) {
         "abcdefghijklmnopqrstuvwxyz";
         const size_t max_index = (sizeof(charset) - 1);
         srand(time(0));
-        return charset[ rand() % max_index ];
+        long random_number = random_real() * 10003;
+        return charset[ random_number % max_index ];
     };
     std::string str(length,0);
-    std::generate_n( str.begin(), length, randchar );
+    std::generate_n(str.begin(), length, randchar );
     return str;
 }
 

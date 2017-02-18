@@ -1,4 +1,3 @@
-
 #ifndef UTIL_H
 #define UTIL_H
 #include <chrono>
@@ -9,6 +8,8 @@
 #include <unordered_map>
 #include <experimental/optional>
 #include "json.hpp"
+
+#define db std::cout << "debug: " << __func__ << ":" << __LINE__ << std::endl
 namespace util {
   using Clock = std::chrono::high_resolution_clock;
   using std::chrono::time_point;

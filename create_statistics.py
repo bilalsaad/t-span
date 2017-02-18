@@ -2,7 +2,16 @@ import json
 import glob
 from pprint import pprint
 import matplotlib.pyplot as plt
+import argparse
 
+
+def create_args():
+    parser = argparse.ArgumentParser(description='Create experiments graphs.')
+    parser.add_argument("--save_files",
+            help = "if set graphs are saved to stats/")
+    args = parser.parse_args()
+    return args
+args = create_args()
 
 def get_x_y(json_array, xx, yy):
     num_vars = [x[xx] for x in json_array]
@@ -53,14 +62,17 @@ def compare_2k_3(kfname = 'build/2k_Agraph_report.json',
     plt.show()
 
 def get_expected_edge_number(num_vertices, k):
-    return [ k * (x ** (1.0 + 1.0 / k)) for x in num_vertices] 
+    return [ 2 * k * (x ** (1.0 + 1.0 / k)) for x in num_vertices] 
 
 def get_report_id(edge_report):
     return 'edgegraph_{0}_{1}.png'.format(
             edge_report['k'], edge_report['density'])
 def get_report_info(edge_report):
-    return 'Algorithm params: k = {0}, density = {1}'.format(edge_report['k'],
-                                                      edge_report['density'])
+    if edge_report['k'] < 0: # three_spanner algorithm
+        alg_description = "Three - Spanner"
+    else:
+        alg_description = "2 * {0} - 1 Spanner".format(edge_report['k'])
+    return '{0}, density = {1}'.format(alg_description, edge_report['density'])
 
 def create_edge_number_graph(edge_report):
     f = plt.figure()
@@ -69,6 +81,7 @@ def create_edge_number_graph(edge_report):
     num_vertices, num_edges = \
         get_x_y(edge_report, 'size', 'average_spanner_size')
     k = edge_report[0]['k']
+    k = k if k > 0 else 2 # if k < 0 this means it was three_spanner.
     expected_ys = get_expected_edge_number(num_vertices, k)
     report_plot, = plt.plot(num_vertices, num_edges, "r", label = 'spanner alg')
     expected_plot, = plt.plot(num_vertices, expected_ys, "g",
@@ -77,8 +90,10 @@ def create_edge_number_graph(edge_report):
     plt.legend(bbox_to_anchor=(0.05, 1), loc=2, borderaxespad=18.)
     plt.ylabel('# number_of_edges')
     plt.xlabel('# number_of_vertices')
+    if args.save_files:
+        plt.savefig('stats/' + get_report_id(edge_report[0]))
+        print 'save files'
     plt.show()
-    plt.savefig('stats/' + get_report_id(edge_report[0]))
     plt.close()
 
 def edge_reports(pattern = 'build/out/EdgeReport*'):
@@ -86,4 +101,7 @@ def edge_reports(pattern = 'build/out/EdgeReport*'):
     for edge_report in edge_reports:
         create_edge_number_graph(get_json_array(edge_report))
 
-edge_reports();
+
+
+if __name__ == "__main__":
+    edge_reports('build/out/*hB2ivDL.json');
