@@ -9,6 +9,8 @@ def create_args():
     parser = argparse.ArgumentParser(description='Create experiments graphs.')
     parser.add_argument("--save_files",
             help = "if set graphs are saved to stats/")
+    parser.add_argument("reportid",
+            help = "will search for reports in build/out/*<reportid>*.json")
     args = parser.parse_args()
     return args
 args = create_args()
@@ -62,7 +64,7 @@ def compare_2k_3(kfname = 'build/2k_Agraph_report.json',
     plt.show()
 
 def get_expected_edge_number(num_vertices, k):
-    return [ 2 * k * (x ** (1.0 + 1.0 / k)) for x in num_vertices] 
+    return [ k * (x ** (1.0 + 1.0 / k)) for x in num_vertices] 
 
 def get_report_id(edge_report):
     return 'edgegraph_{0}_{1}_png'.format(
@@ -71,7 +73,7 @@ def get_report_info(edge_report):
     if edge_report['k'] < 0: # three_spanner algorithm
         alg_description = "Three - Spanner"
     else:
-        alg_description = "2 * {0} - 1 Spanner".format(edge_report['k'])
+        alg_description = "2k - 1 Spanner, k = {0}".format(edge_report['k'])
     return '{0}, density = {1}'.format(alg_description, edge_report['density'])
 
 def create_edge_number_graph(edge_report):
@@ -129,4 +131,4 @@ def stretch_reports(pattern = 'build/out/EdgeReport*'):
         create_max_stretch_report(get_json_array(stretch_report))
 
 if __name__ == "__main__":
-    stretch_reports('build/out/*zwjc5U9*');
+    stretch_reports('build/out/*{0}*'.format(args.reportid))

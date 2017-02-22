@@ -310,16 +310,265 @@ namespace{
   }
 }  // namespace.
 
+namespace {
+
+  // Initialize V_i to 0 ... n-1
+  auto initialize_V(const Graph& g) {
+    std::unordered_set<int> res;
+    for (int i = 0; i < g.size(); ++i)
+      res.emplace(i);
+    return res;
+  }
+  // Initialize the clusters to be {{v} | v in G}
+  auto initialize_Clusters(const Graph& g) {
+    std::unordered_map<int, int> vertex_cluster_map;
+    for (int v = 0;  v < g.size(); v++) {
+      vertex_cluster_map.emplace(v, v); 
+    }
+    return vertex_cluster_map;
+  }
+
+  auto sample_clusters(const std::unordered_map<int, int>& clusters, int k, int n) {
+    // The probability of sampling a cluster.
+    const double probability = pow(n, -1.0 / static_cast<double>(k));
+
+    std::unordered_set<int> sampled_clusters;
+    std::unordered_set<int> all_clusters;
+    for (auto&& vertex_cluster : clusters) {
+      all_clusters.emplace(vertex_cluster.second);
+    }
+                    
+    for (auto rep : all_clusters) {
+      if (random_real() < probability) {
+        sampled_clusters.emplace(rep);
+      }
+    }
+
+    return sampled_clusters;
+  }
+
+  // Return true if v's cluster is sampled.
+  inline bool is_vertex_sampled(const std::unordered_set<int>& samples,
+                         const std::unordered_map<int,int>& clusters,
+                         int v) {
+    auto vertex_entry = clusters.find(v);
+    // Vertex must exist.
+    assert(vertex_entry != std::end(clusters));
+    return samples.count(vertex_entry->second) > 0;
+  }
+
+  // Returns all the vertices in sampled clusters.
+  auto vertices_from_sampled_clusters(
+      const std::unordered_set<int>& sampled_clusters,
+      const std::unordered_map<int, int>& clusters) {
+    std::unordered_set<int> v_i_next;
+    for (auto&& vertex_cluster : clusters) {
+      if (sampled_clusters.count(vertex_cluster.second) > 0)
+        v_i_next.emplace(vertex_cluster.first);
+    }
+    return v_i_next;
+  }
+
+  // Returns a clustering, that consists only of the sampled clusters
+  auto clusters_from_sample(const std::unordered_map<int, int>& prev_clusters,
+                            const std::unordered_set<int>& samples) {
+    std::unordered_map<int, int> new_clusters;
+    std::copy_if(std::begin(prev_clusters),
+                 std::end(prev_clusters),
+                 std::inserter(new_clusters, std::end(new_clusters)),
+                 [&samples] (const auto& vertex_cluster) {
+                   return samples.count(vertex_cluster.second) > 0;
+                 });
+    return new_clusters;
+  }
+
+  // Given a vertex v in g, a map of cluster->min_edge s.t min_edge is the
+  // nearest vertex u in cluster 'c' to v.
+  std::unordered_map<int, Edge> cluster_to_min_edge_map(
+      const Graph& g,
+      int vertex,
+      const std::unordered_map<int, int>& clusters) {
+    std::unordered_map<int, Edge> cluster_representives;
+    for (const auto& e : g.neighbors(vertex)) {
+      int cluster = clusters.find(e.end)->second;
+      auto current_rep = cluster_representives.find(cluster);
+      if (current_rep == std::end(cluster_representives)) {
+        cluster_representives.emplace(clusters.find(e.end)->second, e);
+      } else if (current_rep->second > e) {
+        current_rep->second = e;
+      }
+    }
+    return cluster_representives;
+  }
+
+  struct form_cluster2_ret {
+    std::unordered_map<int, int> last_clustering, before_last;
+    Graph not_added;
+    std::unordered_set<int> remaining_vertices;
+  };
+
+  // 
+  auto form_clusters_2(Graph g, Graph& spanner, int k) {
+    // Maps each vertex to its cluster.
+    std::unordered_set<int> V_i = initialize_V(g);
+    // Clusters are represented as an array of size |V| where C_i[u] points to
+    // center of the cluster, vertex u is in.
+    auto C_i = initialize_Clusters(g);
+    // These represent the vertices and the clusters that will be used in the
+    // next iteration.
+    decltype(V_i) V_i_next;
+    decltype(C_i) C_i_next;
+    decltype(C_i) C_before_last;
+    for (int i = 0; i < k / 2; ++i) {
+      // Sample clusters from C_i for this iteration.
+      auto R_i = sample_clusters(C_i, k, g.size());
+      // Initialize V_{i+1} and C_i_{i+1}
+      V_i_next = vertices_from_sampled_clusters(R_i, C_i);
+      C_i_next = clusters_from_sample(C_i, R_i);
+      // Now we process each vertex in V_i, not belonging to any sampled cluster
+      for (int v : V_i) {
+        if (is_vertex_sampled(R_i, C_i, v))
+          continue;
+        // Now there are two cases, is v adjacent to any sampled clusters or not
+        if (std::none_of(std::begin(g.neighbors(v)),
+                         std::end(g.neighbors(v)),
+                         [&] (const auto& neighbor) {
+                             return is_vertex_sampled(R_i, C_i, neighbor.end);
+                         })) {
+          auto cluster_min_edge_map = cluster_to_min_edge_map(g, v, C_i);
+          g.clear_neighbors(v);
+          for (const auto& cluster_and_edge : cluster_min_edge_map) {
+            const auto& edge = cluster_and_edge.second;
+            spanner.add_edge(v, edge.end, edge.w);
+          }
+        } else {  // v is adjacent to sampled vertices.
+          auto cluster_min_edge_map = cluster_to_min_edge_map(g, v, C_i);
+          ClusterAndEdge sentinel_edge =
+            {-1, {-1, std::numeric_limits<double>::max()}};
+          auto best_sampled = std::accumulate(std::begin(cluster_min_edge_map),
+              std::end(cluster_min_edge_map), sentinel_edge,
+              [&] (auto&& best_sampled, auto&& next) {
+                if (is_vertex_sampled(R_i, C_i, next.second.end)
+                    && next.second < best_sampled.min_edge)
+                    return ClusterAndEdge{next.first, next.second}; 
+                return best_sampled;
+              });
+          // There must be sampled neighbor.
+          assert(best_sampled.cluster != sentinel_edge.cluster);
+          C_i_next.emplace(v, best_sampled.cluster);
+          V_i_next.emplace(v);
+          for (const auto& cluster_and_edge : cluster_min_edge_map) {
+            const auto& cluster = cluster_and_edge.first;
+            const auto& min_edge = cluster_and_edge.second;
+            if (cluster == best_sampled.cluster ||
+                min_edge < best_sampled.min_edge) {
+              // Now we remove all edges corresponding to this cluster.
+              g.remove_neighbors(v, [&] (int neighbor) {
+                  return C_i[neighbor] == cluster;});
+              spanner.add_edge(v, min_edge.end, min_edge.w);
+            }
+          } 
+        }
+      }
+      // Now we need to remove the intra cluster edges.
+      for (int vertex : V_i_next) {
+        g.remove_neighbors(vertex,
+            [&] (auto&& u) { return C_i_next[vertex] == C_i_next[u]; });
+      }
+      C_before_last = std::move(C_i);
+      C_i = std::move(C_i_next);
+      V_i = std::move(V_i_next);
+    }
+  return form_cluster2_ret {C_i, C_before_last, g, V_i};
+}
+
+struct ExtendedEdge {
+  int u, v;
+    double w;
+    ExtendedEdge(int u, int v, double w): u(u), v(v), w(w) {}
+    ExtendedEdge(const ExtendedEdge& e): u(e.u), v(e.v), w(e.w) {}
+    ExtendedEdge() : u(-1), v(-1), w(std::numeric_limits<double>::max()) {}
+  };
+
+  // maps <c1, c2> -> edge, s.t edge is the minimum edge between c1 and c2
+  // in 'remaining'.
+  auto cluster_pair_maps(const Graph& remaining,
+      const std::unordered_set<int>& remaining_vertices,
+      const std::unordered_map<int,int>& c1,
+      const std::unordered_map<int,int>& c2) {
+    std::unordered_map<int, std::unordered_map<int, ExtendedEdge>> map;
+    for (int vertex : remaining_vertices) {
+      int v_cluster = c1.find(vertex)->second;
+      for (const auto& edge : remaining.neighbors(vertex)) {
+        // If this edge exists edge.end must be in a cluster.
+        int neighbor_cluster = c2.find(edge.end)->second;
+        // this is bit hacky, to make sure we are symmetric.
+        auto& neighbor_entry_a = map[v_cluster][neighbor_cluster];
+        auto& neighbor_entry_b = map[neighbor_cluster][v_cluster];
+        if (edge.w < neighbor_entry_a.w) {
+          neighbor_entry_a.v = vertex;
+          neighbor_entry_a.u = edge.end;
+          neighbor_entry_a.w = edge.w;
+          neighbor_entry_b = neighbor_entry_a;
+        }
+      }
+    }
+    return map;
+  }
+
+  auto join_clusters_odd(const Graph& remaining, Graph& spanner,
+      const unordered_set<int>& remaining_vertices,
+      const std::unordered_map<int, int>& clustering) {
+    auto cluster_pairs_map = cluster_pair_maps(remaining, remaining_vertices,
+        clustering, clustering);
+    for(const auto& c1 : cluster_pairs_map) {
+       for (const auto& c2 : c1.second) {
+          spanner.add_edge(c2.second.u, c2.second.v, c2.second.w);
+       }
+    }
+  }
+
+  auto join_clusters_even(const Graph& remaining, Graph& spanner,
+      const std::unordered_set<int>& remaining_vertices,
+      const std::unordered_map<int, int>& last_clustering,
+      const std::unordered_map<int, int>& before_last_clustering) {
+
+    auto cluster_pairs_map = cluster_pair_maps(remaining, remaining_vertices,
+        last_clustering, before_last_clustering);
+    for(const auto& c1 : cluster_pairs_map) {
+       for (const auto& c2 : c1.second) {
+          spanner.add_edge(c2.second.u, c2.second.v, c2.second.w);
+       }
+    }
+  }
+} // namespace
+
+
 
 Graph two_k_minus_1_spanner(int k, Graph g, std::ostream& out) {
   Graph spanner(g.size());
-  auto end_of_phase_1 = form_clusters(g, spanner, k, out);
-  join_clusters(end_of_phase_1.not_added, spanner,
-      end_of_phase_1.last_clustering,
-      ((k % 2) == 0) ? end_of_phase_1.before_last :
-      end_of_phase_1.last_clustering);
-  
+  bool use_rewrite = util::get_bool_flag("use_new_alg");
+  if (use_rewrite) {
+    auto end_of_phase_1 = form_clusters_2(g, spanner, k);
+    if (k % 2 == 0) {
+      join_clusters_even(end_of_phase_1.not_added, spanner,
+          end_of_phase_1.remaining_vertices,
+          end_of_phase_1.last_clustering,
+          end_of_phase_1.before_last);
+    } else {  // k is odd
+      join_clusters_odd(end_of_phase_1.not_added, spanner,
+          end_of_phase_1.remaining_vertices,
+          end_of_phase_1.last_clustering);
+    }
+
+  } else {
+    auto end_of_phase_1 = form_clusters(g, spanner, k, out);
+    join_clusters(end_of_phase_1.not_added, spanner,
+        end_of_phase_1.last_clustering,
+        ((k % 2) == 0) ? end_of_phase_1.before_last :
+        end_of_phase_1.last_clustering);
+  }
+
   return spanner;
 }
-
 }  // namespace graphs
