@@ -114,9 +114,63 @@ def create_max_stretch_report(stretch_report):
     plt.ylabel('max_stretch')
     plt.xlabel('# number_of_vertices')
     if args.save_files:
-        plt.savefig('stats/' + get_report_id(stretch_report[0]))
+        den = int (10 * stretch_report[0]['density'])
+        start_v = num_vertices[0]
+        end_v = num_vertices[-1]
+        print den, start_v, end_v
+        plt.savefig(
+                '/Users/bilalSaad/Desktop/tex/2k_spanner/stretch_report_k{0}_{1}_{2}_{3}.png'.
+                format(k, num_vertices[0], num_vertices[-1], den))
         print 'save files'
-    plt.show()
+    else:
+        plt.show()
+    plt.close()
+
+def create_density_report(edge_report):
+    f = plt.figure()
+    f.suptitle("Density Graph", fontsize=14, fontweight='bold')
+
+    num_vertices, num_edges = \
+        get_x_y(edge_report, 'density', 'average_spanner_size')
+    k = edge_report[0]['k']
+    expected_ys = get_expected_edge_number(num_vertices, k)
+    report_plot, = plt.plot(num_vertices, num_edges, "r", label = 'spanner alg')
+    expected_plot, = plt.plot(num_vertices, expected_ys, "g",
+            label = 'O(kn^(1+1/k))')
+    plt.legend(handles=[report_plot, expected_plot])
+    plt.legend(bbox_to_anchor=(0.05, 1), loc=2, borderaxespad=18.)
+    plt.ylabel('# number_of_edges')
+    plt.xlabel('density')
+    if args.save_files:
+        sz = edge_report[0]["size"]
+        plt.savefig(
+                '/Users/bilalSaad/Desktop/tex/2k_spanner/den_report_k{0}_{1}.png'.
+                format(k, sz))
+        print 'save files'
+    else:
+        plt.show()
+    plt.close()
+
+def create_stretch_density_report(edge_report):
+    f = plt.figure()
+    f.suptitle("Density Graph", fontsize=14, fontweight='bold')
+
+    num_vertices, num_edges = \
+        get_x_y(edge_report, 'density', 'max_stretch')
+    k = edge_report[0]['k']
+    report_plot, = plt.plot(num_vertices, num_edges, "r", label = 'spanner alg')
+    plt.legend(handles=[report_plot])
+    plt.legend(bbox_to_anchor=(0.05, 1), loc=2, borderaxespad=18.)
+    plt.ylabel('max_stretch')
+    plt.xlabel('density')
+    if args.save_files:
+        sz = edge_report[0]["size"]
+        plt.savefig(
+                '/Users/bilalSaad/Desktop/tex/2k_spanner/stretch_den_report_k{0}_{1}.png'.
+                format(k, sz))
+        print 'save files'
+    else:
+        plt.show()
     plt.close()
 
 def edge_reports(pattern = 'build/out/EdgeReport*'):
@@ -130,5 +184,14 @@ def stretch_reports(pattern = 'build/out/EdgeReport*'):
         print stretch_report
         create_max_stretch_report(get_json_array(stretch_report))
 
+def density_reports(pattern):
+    density_reports = glob.glob(pattern)
+    for report in density_reports:
+        create_density_report(get_json_array(report))
+def stretch_density_reports(pattern):
+    density_reports = glob.glob(pattern)
+    for report in density_reports:
+        create_stretch_density_report(get_json_array(report))
+
 if __name__ == "__main__":
-    stretch_reports('build/out/*{0}*'.format(args.reportid))
+    edge_reports('build/out/Feb27/*{0}*'.format(args.reportid))

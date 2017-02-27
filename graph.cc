@@ -28,7 +28,8 @@ namespace graphs {
     return a.size() == b.size() && is_included(a, b) && is_included(b, a);
   }
 
-  Graph randomGraph(int num_v, double edge_density) {
+  Graph randomGraph(int num_v, double edge_density,
+      const std::function<double(void)>& edge_weight) {
     //scoped_timer st(
     //    "building graph with " + std::to_string(num_v) + " vertices");
     Graph result(num_v);
@@ -36,8 +37,7 @@ namespace graphs {
       for (int j = i + 1; j < num_v; ++j) {
         // Flip a coin to decide wether to add edge <i, j> according to density.
         if (random_real() < edge_density) {
-          result.add_edge(i, j,
-              static_cast<double>((random_real() * 100.0) + 90));
+          result.add_edge(i, j, edge_weight());
         }
       }
     }

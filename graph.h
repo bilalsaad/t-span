@@ -121,12 +121,27 @@ namespace graphs {
   bool check_subgraph_disconnection(const Graph& g, const Graph& subgraph);
 
   // Generates a random graph with n vertices.
-  Graph randomGraph(int n, double edge_density = 0.5);
+  Graph randomGraph(int n, double edge_density = 0.5,
+      const std::function<double(void)>& edge_weight = util::random_real);
   std::experimental::optional<Graph> parse_input(std::fstream&);
   vector<double> bellmanford(const Graph& g, int src);
   vector<vector<double>> floydwarshall(const Graph& g);
   std::ostream& operator<<(std::ostream& os, const Edge& g);
   std::ostream& operator<<(std::ostream& os, const Graph& g);
   bool operator==(const Graph& a, const Graph& b);
+
+  struct ExtendedEdge {
+    int u, v;
+    double w;
+    ExtendedEdge(int u, int v, double w): u(u), v(v), w(w) {}
+    ExtendedEdge(const ExtendedEdge& e): u(e.u), v(e.v), w(e.w) {}
+    ExtendedEdge() : u(-1), v(-1), w(std::numeric_limits<double>::max()) {}
+  };
+  inline bool operator==(const ExtendedEdge& a, const ExtendedEdge& b) {
+    return (a.u == b.u && a.v == b.v) || (a.v == b.u && a.u == b.v);
+  }
+  inline bool operator<(const ExtendedEdge& a, const ExtendedEdge& b) {
+    return a.w < b.w;
+  }
 } // namespace graphs.
 #endif

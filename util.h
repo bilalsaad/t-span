@@ -31,8 +31,8 @@ namespace util {
       std::string name;
   };
 
-  // returns a random real number between 0 .. 1
-  double random_real(std::experimental::optional<int> seed = {});
+  // returns a random real number between 0 .. 1, uniform
+  double random_real();
 
   // flag stuff
   void add_int_flag(const std::string& flagname, const std::string& desc,

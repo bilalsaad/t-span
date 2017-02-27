@@ -5,8 +5,8 @@
 namespace util {
 using std::string;
 using std::experimental::optional;
-double random_real(optional<int> seed) {
-  static std::minstd_rand0 generator((seed ? *seed : std::time(0)));
+double random_real() {
+  static std::minstd_rand0 generator(std::time(0));
   static std::uniform_real_distribution<double> dst(0, 1);
   return dst(generator);
 }
