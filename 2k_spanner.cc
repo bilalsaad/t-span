@@ -10,6 +10,8 @@
 #include "util.h"
 #include "graph.h"
 
+using namespace std;
+
 namespace graphs {
   using util::scoped_timer;
   using util::random_real;
@@ -68,6 +70,9 @@ namespace{
   struct ClusterAndEdge {
     int cluster; 
     Edge min_edge;
+    operator bool() {
+      return cluster != -1;
+    }
   };
 
   bool operator>(const ClusterAndEdge& a, const ClusterAndEdge& b) {
@@ -404,14 +409,14 @@ namespace {
 
   // If v has a sampled neighbor, the nearest one is returned. If v has no such
   // neighbors 'empty' is returned.
-  std::experimental::optional<ClusterAndEdge> nearest_sampled_neighbor(
+  ClusterAndEdge nearest_sampled_neighbor(
       const Graph& g, int vertex,
       const std::unordered_set<int>& sampled_clusters,
       const std::unordered_map<int, int>& clustering,
       const std::unordered_map<int, Edge>& cluster_min_edge_map) {
     ClusterAndEdge sentinel_edge =
     {-1, {-1, std::numeric_limits<double>::max()}};
-    auto best_sampled = std::accumulate(std::begin(cluster_min_edge_map),
+    return std::accumulate(std::begin(cluster_min_edge_map),
         std::end(cluster_min_edge_map), sentinel_edge,
         [&] (auto&& best_sampled, auto&& next) {
         if (is_vertex_sampled(sampled_clusters, clustering, next.second.end)
@@ -420,11 +425,6 @@ namespace {
         }
         return best_sampled;
         });
-
-    // No sampled neighbors.
-    if (best_sampled.cluster == sentinel_edge.cluster)
-      return {};
-    return best_sampled;
   }
 
   //
@@ -459,7 +459,7 @@ namespace {
             spanner.add_edge(v, edge.end, edge.w);
           }
         } else {  // v is adjacent to sampled vertices.
-          const auto& best_sampled = *maybe_best_sampled;
+          const auto& best_sampled = maybe_best_sampled;
           C_i_next.emplace(v, best_sampled.cluster);
           V_i_next.emplace(v);
           for (const auto& cluster_and_edge : cluster_min_edge_map) {

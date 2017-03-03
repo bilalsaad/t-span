@@ -7,10 +7,8 @@
 #include <iostream>
 #include <fstream>
 #include <chrono>
-#include <experimental/optional>
 #include "util.h"
 
-using namespace std;
 
 namespace graphs {
   // Represents an edge ending in vertex end, with weight w.
@@ -123,9 +121,8 @@ namespace graphs {
   // Generates a random graph with n vertices.
   Graph randomGraph(int n, double edge_density = 0.5,
       const std::function<double(void)>& edge_weight = util::random_real);
-  std::experimental::optional<Graph> parse_input(std::fstream&);
-  vector<double> bellmanford(const Graph& g, int src);
-  vector<vector<double>> floydwarshall(const Graph& g);
+  std::vector<double> bellmanford(const Graph& g, int src);
+  std::vector<std::vector<double>> floydwarshall(const Graph& g);
   std::ostream& operator<<(std::ostream& os, const Edge& g);
   std::ostream& operator<<(std::ostream& os, const Graph& g);
   bool operator==(const Graph& a, const Graph& b);

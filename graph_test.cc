@@ -8,7 +8,6 @@
 #include <future>
 #include "three-spanner-algorithm.h"
 #include "2k_spanner.h"
-#include "greedy-spanner.h"
 #include "json.hpp"
 
 using namespace std;
@@ -402,24 +401,6 @@ void ConductExperiments(const json& experiment_config,
   }
   for (auto& f : futures) {
     f.get();
-  }
-}
-
-void test_simple() {
-  Graph g(1);
-  {
-    util::scoped_timer st("build graph with 500 v");
-    g = randomGraph(50, 1.0);
-  }
-  {
-    util::scoped_timer st("two_k_spanner");
-    auto sp = two_k_minus_1_spanner(2, g);
-    cout << "twok edges " << sp.edges() << endl;
-  }
-  {
-    util::scoped_timer st("greedy_spanner");
-    auto greedy_sp = greedy_spanner(3, g);
-    cout << "greedy_edges " << greedy_sp.edges() << endl;
   }
 }
 
