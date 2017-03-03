@@ -1,8 +1,0 @@
-Hello this is a todo list in the project.
-
-2. Write something that creates a graph object from a text file. To make testing
-easier. -- RAMI
-
-3. Write unit tests for the graph class
-
-4. Find an elegant way to expose the neighbors of a vertex;

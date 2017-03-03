@@ -67,6 +67,8 @@ The project is to be used in the following manner.
           "edge_weight_distribution" : "weibull"              
 ---------------------------END_INPUT_FILE_GRAMMAR-------------------------------
 
+An example input file can be found in the repo - "config.json"
+
 1.2 Output files:
 Such an input file will result into result json files, given an input file
 $file$, for each experiment in "experiments", a json result file will be created
