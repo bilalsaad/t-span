@@ -11,6 +11,10 @@ def create_args():
             help = "if set graphs are saved to stats/")
     parser.add_argument("reportid",
             help = "will search for reports in build/out/*<reportid>*.json")
+    parser.add_argument("report_type",
+            help = "must be edge_report | stretch_report | density_report ")
+    parser.add_argument("reports_dir",
+            help = "directory of reports")
     args = parser.parse_args()
     return args
 args = create_args()
@@ -192,6 +196,15 @@ def stretch_density_reports(pattern):
     density_reports = glob.glob(pattern)
     for report in density_reports:
         create_stretch_density_report(get_json_array(report))
-
+def get_report_function(report_type):
+    if report_type == "edge_report":
+        return edge_reports
+    elif report_type == "stretch_report":
+        return stretch_reports
+    elif report_type == "density_report":
+        return density_reports
+    else :
+        print 'error unrecognized report type'
 if __name__ == "__main__":
-    edge_reports('build/out/Feb27/*{0}*'.format(args.reportid))
+    report_func = get_report_function(args.report_type)
+    report_func('{0}/*{1}*'.format(args.reports_dir, args.reportid))

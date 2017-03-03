@@ -4,6 +4,10 @@ cmake_minimum_required(VERSION 3.6)
 # Project name
 project(t-spanner)
 
+
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
 # Set the output folder where your program will be created
 set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
@@ -22,3 +26,4 @@ set(CMAKE_CXX_STANDARD 14)
 # compile rule
 add_executable(t-spanner "${SOURCES}")
 
+target_link_libraries(t-spanner Threads::Threads)

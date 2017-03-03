@@ -357,7 +357,7 @@ class ExperimentInfos {
 };
 
 string output_file(const string& filename) {
-  const string prefix = "/Users/bilalSaad/ws/t-span/build/out/";
+  const string prefix = "out/";
   std::time_t t = std::time(nullptr);
   char mbstr[10];
   string dir;
