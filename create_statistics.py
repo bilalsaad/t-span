@@ -10,11 +10,10 @@ def create_args():
     parser.add_argument("--save_files",
             help = "if set graphs are saved to stats/")
     parser.add_argument("reportid",
-            help = "will search for reports in build/out/*<reportid>*.json")
+            help = "will search for reports in <report_dir>/*<reportid>*.json")
     parser.add_argument("report_type",
             help = "must be edge_report | stretch_report | density_report ")
-    parser.add_argument("reports_dir",
-            help = "directory of reports")
+    parser.add_argument("reports_dir", help = "directory of reports")
     args = parser.parse_args()
     return args
 args = create_args()

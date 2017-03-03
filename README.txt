@@ -1,7 +1,20 @@
 # t-span
 Mini project for low dist embeddings
+0. 
+Installation instructions:
+Requirements:
+ *LINUX OS
+ * g++-6
+ * CMake 3.6 or higher
+ * if you want to visualize graphs then python and python-matplotlib 
 
-
+0.1 Compiling project:
+  I assume you're in the project directory.
+  ~/t-span$ mkdir build
+  ~/t-span$ cd build
+  ~/t-span/build$ cmake ..
+  ~/t-span/build$ make
+* executable is in ~/t-span/bin/t-spanner
 1. How to use the project
 The project is to be used in the following manner.
 
@@ -83,4 +96,10 @@ MAX_STRETCH := "max_stretch" : REAL_NUMBER
 2. run the project from the <build> directory as follows:
   $ report_suffix=../bin/t-spanner --experiments_config_file=$PATH_TO_INPUT_FILE
   $ ls build/out/<MONTH><DAY>/*${report_suffix}* should hold the the results.
+  now to visualize the data, you may run the following command:
+  $ cd ..
+  $ python create_statistics $report_suffix ("edge_report" | "stretch_report" \
+      | "density_report" #depending on which results are in the report) \
+      "build/out/<MONTH><DAY"
+
 
